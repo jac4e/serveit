@@ -45,8 +45,8 @@ async function getByDate(date) {
 
 }
 
-async function getBalanceByAccountId(accountid: IAccount['id']) {
-    const balance = await Transaction.aggregate([{
+async function getBalanceByAccountId(accountid: IAccount['id']): Promise<bigint> {
+    const balance = await Transaction.aggregate<{_id: null, balance: number}>([{
         $match: {
             accountid: accountid
         }
@@ -68,9 +68,13 @@ async function getBalanceByAccountId(accountid: IAccount['id']) {
             }
         }
     }])
-    
-    console.log(typeof balance);
-    return balance;
+
+    // if length of balance is 0, that means there are no transactions in the database for this account
+    // balance defaults to 0 in this case
+    if (balance.length === 0){
+        return 0n;
+    }
+    return BigInt(balance[0].balance);
 }
 
 async function getByAccountId(accountid: IAccount['id']): Promise<ITransactionLean[]> {

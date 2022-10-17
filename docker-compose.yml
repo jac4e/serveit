@@ -1,28 +1,44 @@
-version: "3.9"
+x-dev_image_base: &dev_image_base
+  build: 
+    context: .
+    dockerfile: Dockerfile
+
+x-backend_base: &backend_base
+  <<: *dev_image_base
+  working_dir: /src/
+  volumes:
+    - .:/src
+    - backend_node_modules:/src/node_modules
+
 services:
-  web:
-    # TODO: add healthcheck
-    build: .
+  install-backend:
+    <<: *backend_base
+    command: npm i
+  serve-backend:
+    <<: *backend_base
+    restart: unless-stopped
+    command: nodemon /src/dist/index.js
     ports:
-      - "3000:3000"
+      - "3001:3000"
     networks:
-      - backend
-    volumes:
-      - /spendit/node_modules
+      backend:
     env_file:
       - config/backend.env
-    depends_on:
-      - database
-    restart: unless-stopped
   database:
     # TODO: add healthcheck
+    ports:
+      - "3002:27017"
     image: mongo:6
     restart: unless-stopped
     user: "mongodb:mongodb"
-    volumes: 
+    volumes:
       - ./mongodata:/data:Z
     networks:
       - backend
+
+volumes:
+  backend_node_modules:
+  frontend_node_modules:
 
 networks:
   backend:

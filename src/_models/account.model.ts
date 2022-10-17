@@ -2,7 +2,7 @@ import mongoose, { Document } from 'mongoose';
 import validator from 'validator';
 
 export enum Roles {
-    Unverified = 'usnverified',
+    Unverified = 'unverified',
     User = 'user',
     Admin = 'admin'
 }
@@ -10,30 +10,30 @@ export enum Roles {
 export interface IAccount extends Document {
     role: Roles;
     username: string;
-    firstName:  string;
-    lastName:  string;
-    email:  string;
-    hash:  string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    hash: string;
     sessionid: string;
     gid?: string;
 }
 
 export interface IAccountForm {
     username: IAccount['username'];
-    firstName:  IAccount['firstName'];
-    lastName:  IAccount['lastName'];
-    email:  IAccount['email'];
-    role:  IAccount['role'];
+    firstName: IAccount['firstName'];
+    lastName: IAccount['lastName'];
+    email: IAccount['email'];
+    role: IAccount['role'];
     password: string;
     gid?: IAccount['gid'];
 }
 
 export interface IAccountLean {
     username: IAccount['username'];
-    firstName:  IAccount['firstName'];
-    lastName:  IAccount['lastName'];
-    email:  IAccount['email'];
-    role:  IAccount['role'];
+    firstName: IAccount['firstName'];
+    lastName: IAccount['lastName'];
+    email: IAccount['email'];
+    role: IAccount['role'];
     balance: bigint;
     id: IAccount['id'];
 }
@@ -44,14 +44,21 @@ export interface IAccountLogin {
 }
 
 const schema = new mongoose.Schema({
-    role: { type: String, enum: Roles, required: true },
-    username: { type: String, unique: true, required: true},
-    firstName: { type: String, required: true },
-    lastName: { type: String, required: true },
-    email: { type: String, required: true },
-    hash: { type: String, required: true },
-    sessionid: { type: String, unique: true, required: true },
-    gid: { type: String, unique: true }
+    role: { type: String, trim: true, enum: Roles, required: true },
+    username: { type: String, trim: true, unique: true, required: true },
+    firstName: { type: String, trim: true, required: true },
+    lastName: { type: String, trim: true, required: true },
+    email: { type: String, trim: true, required: true },
+    hash: { type: String, trim: true, required: true },
+    sessionid: { type: String, trim: true, unique: true, required: true },
+    gid: {
+        type: String,
+        index: {
+            unique: true,
+            trim: true,
+            partialFilterExpression: { gid: { $type: "string" } }
+        }
+    }
 });
 
 schema.set('toJSON', {
@@ -79,4 +86,4 @@ function transformDoc(doc) {
     delete doc.sessionid;
 }
 
-export default mongoose.model<IAccount>('Account',schema);
+export default mongoose.model<IAccount>('Account', schema);

@@ -74,7 +74,7 @@ async function auth({
 // Private registration of verified accounts
 async function create(accountParam: IAccountForm): Promise<void> {
   // validate
-  // console.log(JSON.stringify(accountParam))
+  console.log(JSON.stringify(accountParam))
 
   // make sure username is not taken
   if (await Account.findOne({
@@ -137,18 +137,15 @@ async function getSelfTransactions(id: string): Promise<ITransactionLean[]> {
 async function getBalance(id: string): Promise<bigint>{
   // transaction based balance
   // console.log(`id: ${id}`)
-  const res = await transaction.getBalanceByAccountId(id)
+  return await transaction.getBalanceByAccountId(id)
   // console.log(res)
-
-  // if no transactions, balance is 0
-  if (res.length === 0){
-    return 0n;
-  }
-  return res[0].balance;
 }
 
 async function resetSession(id: string): Promise<void> {
-  Account.findById(id, (account: IAccount)=> {
+  Account.findById(id, (account: IAccount | null)=> {
+    if (account === null){
+      throw 'Account not found'
+    }
     account.sessionid = randomUUID();
     account.save();
   });

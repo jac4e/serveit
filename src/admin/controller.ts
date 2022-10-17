@@ -3,7 +3,10 @@ import Guard from 'express-jwt-permissions';
 import adminService from './service.js';
 
 const router = express.Router();
-const guard = Guard()
+const guard = Guard({
+    requestProperty: 'auth',
+    permissionsProperty: 'permissions'
+  })
 
 router.use(guard.check('admin'))
 router.get('/transactions', getAllTransactions);

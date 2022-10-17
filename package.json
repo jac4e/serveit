@@ -38,7 +38,6 @@
     "@types/express-fileupload": "^1.4.1",
     "@types/express-jwt": "^6.0.4",
     "@types/express-session": "^1.17.5",
-    "@types/mongoose": "^5.11.97",
     "@types/nodemon": "^1.19.2",
     "@types/prettier": "^2.7.1",
     "@types/uuid": "^8.3.4",

@@ -3,7 +3,10 @@ import Guard from 'express-jwt-permissions';
 import storeService from './service.js';
 
 const router = express.Router();
-const guard = Guard();
+const guard = Guard({
+    requestProperty: 'auth',
+    permissionsProperty: 'permissions'
+  });
 
 // Routes
 router.get('/products', getProducts)

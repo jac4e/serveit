@@ -1,12 +1,15 @@
-import express from 'express';
-import expressJwt from 'express-jwt';
+import express, { NextFunction, request, Response } from 'express';
+import expressJwt, { Request } from 'express-jwt';
 import Guard from 'express-jwt-permissions';
 import transaction from '../_helpers/transaction.js';
 import { IAccountForm, Roles } from '../_models/account.model.js';
 import accountService from './service.js';
 
 const router = express.Router();
-const guard = Guard()
+const guard = Guard({
+    requestProperty: 'auth',
+    permissionsProperty: 'permissions'
+  });
 
 // Routes
 router.post('/auth', auth);
@@ -30,37 +33,37 @@ router.get('/', guard.check(Roles.Admin), getAll);
 
 // Public routes
 function auth(req, res, next) {
-    accountService.auth(req.body)
-        .then(account => account ? res.json(account) : res.status(401).json({
-            message: 'username or password is incorrect'
-        })).catch(err => next(err));
+    accountService.auth(req.body).then(account => res.json(account)).catch(err => next(err));
 }
 
 // User available routes
-function getSelf(req, res, next) {
-    accountService.getById(req.user.sub).then(account => account ? res.json(account) : res.status(500).json({
+function getSelf(req: Request, res: Response, next: NextFunction) {
+    const selfId = getIdFromPayload(req);
+    accountService.getById(selfId).then(account => account ? res.json(account) : res.status(500).json({
         message: 'Something went wrong grabbing self'
     })).catch(err => next(err));
 }
 
 function resetSessionSelf(req, res, next) {
-    accountService.resetSession(req.user.sub).then(() => res.json({})).catch(err => next(err));
+    const selfId = getIdFromPayload(req);
+    accountService.resetSession(selfId).then(() => res.json({})).catch(err => next(err));
 }
 
 function getSelfBalance(req, res, next) {
     // console.log("test'")
-    // console.log(req.user.sub);
-    accountService.getBalance(req.user.sub).then(resp => res.json(resp)).catch(err => next(err));
+    // console.log(selfId);
+    const selfId = getIdFromPayload(req);
+    accountService.getBalance(selfId).then(resp => res.json(resp)).catch(err => next(err));
 }
 
 function getSelfTransactions(req, res, next) {
+    const selfId = getIdFromPayload(req);
     // console.log(`self transactions: ${JSON.stringify(req.user)}`)
-    accountService.getSelfTransactions(req.user.sub).then(resp => res.json(resp)).catch(err => next(err));
+    accountService.getSelfTransactions(selfId).then(resp => res.json(resp)).catch(err => next(err));
 }
 
 function register(req: {body: {form: IAccountForm; gid: string}}, res, next) {
     // Public registration
-
     const googleFirstName = 'BLANK'
     const googleLastName = 'BLANK'
     const googleEmail = 'BLANK'
@@ -82,6 +85,8 @@ function register(req: {body: {form: IAccountForm; gid: string}}, res, next) {
 
 function create(req: {body: IAccountForm}, res, next) {
     // Registration by admin, req.body
+    // Admin created accounts don't need google association
+    req.body.gid === undefined;
     accountService.create(req.body).then(() => res.json({})).catch(err => next(err))
 }
 
@@ -114,6 +119,16 @@ function getBalance(req, res, next) {
 
 function getTransactions(req, res, next) {
     transaction.getById(req.params['accountId']).then(resp => res.json(resp)).catch(err => next(err));
+}
+
+function getIdFromPayload(req: Request): string{
+    if (req.auth === undefined){
+        throw "jwt payload not found in request"
+    }
+    if (req.auth.sub === undefined){
+        throw "jwt payload sub not found in request"
+    }
+    return req.auth.sub
 }
 
 

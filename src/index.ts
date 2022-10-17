@@ -5,8 +5,10 @@ import {existsSync, statSync, readdirSync, readFileSync} from 'fs';
 import { fileURLToPath } from 'url';
 import config from './config.js'
 import accountService from './account/service.js'
+import transactionService from './_helpers/transaction.js';
 import errorHandler from './_helpers/error-handler.js';
 import api from './api.controller.js';
+import { ITransactionForm, TransactionType } from './_models/transaction.model.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -21,9 +23,25 @@ async function deploy() {
     // console.log("deploying")
     await accountService.create(config.account);
   }
+  // const account = await accountService.auth({username: config.account.username, password: config.account.password});
+  // const genesisTransaction: ITransactionForm = {
+  //   accountid: account.id,
+  //   type: TransactionType.Credit,
+  //   reason: "Genesis",
+  //   products: [],
+  //   total: BigInt(1000).toString()
+  // }
+  // await transactionService.create(genesisTransaction);
+  // console.log(await accountService.getBalance(account.id));
 }
 
-deploy()
+deploy();
+
+// Hijack bigint for json serialization
+
+(BigInt.prototype as any).toJSON = function () {
+  return this.toString();
+};
 
 // api routes
 app.use('/api', api);
@@ -31,15 +49,15 @@ app.use('/api', api);
 // app route
 app.get('/', (req,res) => {
   // console.log("ROUTE: Main Index")
-  res.sendFile('dist/index.html',{root: __dirname})
+  res.sendFile('app/index.html',{root: __dirname})
 });
 
 app.get('/*', (req,res) => {
-  const filePath = join(`${__dirname}/dist`, req.path);
+  const filePath = join(`${__dirname}/app`, req.path);
   // If the path does not exist, return a 404.
   if (!existsSync(filePath)) {
     // console.log("ROUTE: Non Main Index")
-    res.sendFile('dist/index.html',{root: __dirname})
+    res.sendFile('app/index.html',{root: __dirname})
     return;
   }
   // Check if the existing item is a directory or a file.
@@ -55,8 +73,8 @@ app.get('/*', (req,res) => {
 });
 
 // global error handler
-app.use(errorHandler)
+app.use(errorHandler);
 
 // start server
-app.set('port', config.port)
+app.set('port', config.port);
 app.listen(config.port, () => console.log('Backend listening on port ' + app.get('port')));
