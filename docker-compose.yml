@@ -1,0 +1,28 @@
+version: "3.9"
+services:
+  web:
+    # TODO: add healthcheck
+    build: .
+    ports:
+      - "3000:3000"
+    networks:
+      - backend
+    volumes:
+      - /spendit/node_modules
+    env_file:
+      - config/backend.env
+    depends_on:
+      - database
+    restart: unless-stopped
+  database:
+    # TODO: add healthcheck
+    image: mongo:6
+    restart: unless-stopped
+    user: "mongodb:mongodb"
+    volumes: 
+      - ./mongodata:/data:Z
+    networks:
+      - backend
+
+networks:
+  backend:
