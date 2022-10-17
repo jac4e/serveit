@@ -1,7 +1,8 @@
 import db from './db.js';
 import accountService from '../account/service.js';
-import { ITransaction, ITransactionForm, ITransactionLean, TransactionType } from '../_models/transaction.model.js';
+import { ITransaction, ITransactionForm, ITransactionItem, ITransactionLean, TransactionType } from '../_models/transaction.model.js';
 import { IAccount } from '../_models/account.model.js';
+import { IProduct, IProductLean } from '../_models/product.model.js';
 
 const Transaction = db.transaction;
 
@@ -82,22 +83,28 @@ async function getByAccountId(accountid: IAccount['id']): Promise<ITransactionLe
 
 }
 
-async function getByType(type) {
-
+async function getByType(type: ITransaction['type']): Promise<ITransactionLean[]> {
+    return await Transaction.find({type: type}).sort({
+        date: -1
+    }).lean<ITransactionLean[]>();
 }
 
-async function getByReason(reason) {
-
+async function getByReason(reason: ITransaction['reason']): Promise<ITransactionLean[]>  {
+    return await Transaction.find({reason: reason}).sort({
+        date: -1
+    }).lean<ITransactionLean[]>();
 }
 
-async function getByProduct(product) {
+// async function getByProduct(productid: IProduct['id']): Promise<ITransactionLean[]>  {
+//     return await Transaction.find({reason: reason}).sort({
+//         date: -1
+//     }).lean<ITransactionLean[]>();
+// }
 
-}
 
+// async function getByAmount(amount) {
 
-async function getByAmount(amount) {
-
-}
+// }
 
 export default {
     create,
