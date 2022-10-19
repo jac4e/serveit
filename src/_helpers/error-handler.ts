@@ -21,6 +21,8 @@
 // SOFTWARE.
 
 export default function errorHandler(err, req, res, next) {
+    // Log error to console
+    console.log(err);
     
     if (typeof (err) === 'string') {
         // custom application error
