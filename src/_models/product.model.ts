@@ -1,45 +1,7 @@
-import mongoose, { Document } from 'mongoose';
-import validator from 'validator';
+import mongoose, { Document, Model } from 'mongoose';
+import { IProductDocument } from 'typeit';
 
-export interface IProduct extends Document{
-    name: string;
-    description?: string;
-    image?: string;
-    price:  string;
-    stock:  string;
-}
-
-export interface IProductLean {
-    id: IProduct['id'];
-    name: IProduct['name'];
-    description: IProduct['description'];
-    image : IProduct['image'];
-    price:  bigint;
-    stock:  bigint;
-}
-
-export interface IProductForm {
-    name: IProduct['name'];
-    description: IProduct['description'];
-    image : IProduct['image'];
-    price:  bigint;
-    stock:  bigint;
-}
-
-export interface ICartItem {
-    name: IProduct['name'];
-    description: IProduct['description'];
-    price:  bigint;
-    amount:  bigint;
-    total:  bigint;
-}
-
-export interface ICartSerialized {
-    id: IProduct['id'];
-    amount:  ICartItem['amount'];
-}
-
-const schema = new mongoose.Schema<IProduct>({
+const schema = new mongoose.Schema<IProductDocument, Model<IProductDocument>>({
     name: {
         type: String,
         unique: true,
@@ -50,7 +12,8 @@ const schema = new mongoose.Schema<IProduct>({
         required: false
     },
     image: {
-        type: String
+        type: String,
+        required: false
     },
     price: {
         type: String,

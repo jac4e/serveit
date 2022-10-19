@@ -3,21 +3,21 @@ import { JwtPayload } from 'jsonwebtoken';
 import config from '../config.js';
 import transactionService from '../_helpers/transaction.js';
 import accountService from '../account/service.js';
-import { ICartItem, ICartSerialized, IProduct, IProductForm, IProductLean } from '../_models/product.model.js';
-import { ITransactionForm, ITransactionItem, TransactionType } from '../_models/transaction.model.js';
+import { ICartItem, ICartItemSerialized, IProduct, IProductDocument, IProductForm, ITransactionForm, ITransactionItem, TransactionType } from 'typeit';
+
 const Product = db.product;
 
-async function getAllProducts(): Promise<IProductLean[]> {
-    return await Product.find({}).lean<IProductLean[]>();
+async function getAllProducts(): Promise<IProduct[]> {
+    return await Product.find({}).lean<IProduct[]>();
 }
 
-async function getProductById(productId: IProduct['id']): Promise<IProductLean> {
-    return await Product.findById(productId).lean<IProductLean>();
+async function getProductById(productId: IProduct['id']): Promise<IProduct> {
+    return await Product.findById(productId).lean<IProduct>();
 }
 
 async function createProduct(productParam: IProductForm): Promise<void> {
     // validate
-    if (await Product.findOne<IProduct>({
+    if (await Product.findOne<IProductDocument>({
         name: productParam.name
     })) {
         throw `Product '${productParam.name}' already exists`;
@@ -29,14 +29,14 @@ async function createProduct(productParam: IProductForm): Promise<void> {
 
 async function updateProductById(id: IProduct['id'], productParam: IProductForm): Promise<void> {
     // console.log(id, productParam)
-    let product = await Product.findById<IProduct>(id)
+    let product = await Product.findById<IProductDocument>(id)
     // console.log(product)
     if (!product) {
         throw `Product '${id}' does not exist`;
     }
     // idk which one to use
     product.set(productParam);
-    product.updateOne(id, productParam);
+    // product.updateOne(productParam);
     // console.log(Object.getOwnPropertyNames(product))
     // update product
     // for (const key in productParam) {
@@ -53,7 +53,7 @@ async function deleteProductById(id: IProduct['id']): Promise<void> {
     await Product.deleteOne({_id: id})
 }
 
-async function purchaseCart(payload: JwtPayload, cartSerialized: ICartSerialized[]): Promise<void> {
+async function purchaseCart(payload: JwtPayload, cartSerialized: ICartItemSerialized[]): Promise<void> {
     // cart is array of ids
     //
     //    [ ids ... ]
@@ -71,7 +71,7 @@ async function purchaseCart(payload: JwtPayload, cartSerialized: ICartSerialized
     const products = await Product.find({'_id': { $in: cartSerialized.map((item) => item.id) } });
     // console.log(products)
     // create cart object for invoice
-    let cart = (await Product.find({'_id': { $in: cartSerialized.map((item) => item.id) } }).lean<IProductLean[]>()).map<ICartItem>(({image, id, stock, price, ...keepAttrs}) => ({...keepAttrs, price: BigInt(price), amount: 0n, total: 0n}));
+    let cart = (await Product.find({'_id': { $in: cartSerialized.map((item) => item.id) } }).lean<IProduct[]>()).map<ICartItem>(({stock, price, ...keepAttrs}) => ({...keepAttrs, price: BigInt(price), amount: 0n, total: 0n}));
     
     let sum = 0n;
     for (let index = 0; index < cartSerialized.length; index++) {
@@ -86,9 +86,9 @@ async function purchaseCart(payload: JwtPayload, cartSerialized: ICartSerialized
             throw `product ${cart[productIndex].name} does not have enough stock left`
         }
 
-        cart[productIndex].total = BigInt(cart[productIndex].amount) * cart[productIndex].price;
+        cart[productIndex].total = BigInt(cart[productIndex].amount) * BigInt(cart[productIndex].price);
         // calc sum
-        sum += cart[productIndex].total;
+        sum += BigInt(cart[productIndex].total);
     }
 
     // console.log(cart)
@@ -109,7 +109,7 @@ async function purchaseCart(payload: JwtPayload, cartSerialized: ICartSerialized
 
     // payment has complete, can now reduce stock levels
     for (let index = 0; index < cart.length; index++) {
-        products[index].stock = (BigInt(products[index].stock) - cart[index].amount).toString();
+        products[index].stock = (BigInt(products[index].stock) - BigInt(cart[index].amount)).toString();
         // console.log(products[index])
         products[index].save();
     }

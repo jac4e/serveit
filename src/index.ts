@@ -8,7 +8,7 @@ import accountService from './account/service.js'
 import transactionService from './_helpers/transaction.js';
 import errorHandler from './_helpers/error-handler.js';
 import api from './api.controller.js';
-import { ITransactionForm, TransactionType } from './_models/transaction.model.js';
+import { ITransactionForm, TransactionType } from 'typeit';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();

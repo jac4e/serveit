@@ -1,8 +1,6 @@
 import db from './db.js';
 import accountService from '../account/service.js';
-import { ITransaction, ITransactionForm, ITransactionItem, ITransactionLean, TransactionType } from '../_models/transaction.model.js';
-import { IAccount } from '../_models/account.model.js';
-import { IProduct, IProductLean } from '../_models/product.model.js';
+import { ITransaction, IAccount, IProduct, ITransactionDocument, ITransactionForm, ITransactionItem, TransactionType } from 'typeit';
 
 const Transaction = db.transaction;
 
@@ -25,16 +23,16 @@ async function create(transactionParam: ITransactionForm): Promise<void> {
     await transaction.save()
 }
 
-async function getAll(): Promise<ITransactionLean[]> {
+async function getAll(): Promise<ITransaction[]> {
     return await Transaction.find({}).sort({
         date: -1
-    }).lean<ITransactionLean[]>();
+    }).lean<ITransaction[]>();
 }
 
 
 async function getById(id: ITransaction['id']): Promise<ITransaction> {
     // console.log(`get trans by id: ${id}`)
-    const transaction = await Transaction.findById<ITransaction>(id);
+    const transaction = await Transaction.findById(id).lean<ITransaction | null>();
     if (transaction === null){
         throw 'transaction not found'
     }
@@ -77,32 +75,32 @@ async function getBalanceByAccountId(accountid: IAccount['id']): Promise<bigint>
     return BigInt(balance[0].balance);
 }
 
-async function getByAccountId(accountid: IAccount['id']): Promise<ITransactionLean[]> {
+async function getByAccountId(accountid: IAccount['id']): Promise<ITransaction[]> {
     // console.log(`get trans by id: ${accountid}`);
     return await Transaction.find({
         accountid: accountid
     }).sort({
         date: -1
-    }).lean<ITransactionLean[]>();
+    }).lean<ITransaction[]>();
 
 }
 
-async function getByType(type: ITransaction['type']): Promise<ITransactionLean[]> {
+async function getByType(type: ITransaction['type']): Promise<ITransaction[]> {
     return await Transaction.find({type: type}).sort({
         date: -1
-    }).lean<ITransactionLean[]>();
+    }).lean<ITransaction[]>();
 }
 
-async function getByReason(reason: ITransaction['reason']): Promise<ITransactionLean[]>  {
+async function getByReason(reason: ITransaction['reason']): Promise<ITransaction[]>  {
     return await Transaction.find({reason: reason}).sort({
         date: -1
-    }).lean<ITransactionLean[]>();
+    }).lean<ITransaction[]>();
 }
 
-// async function getByProduct(productid: IProduct['id']): Promise<ITransactionLean[]>  {
+// async function getByProduct(productid: IProduct['id']): Promise<ITransaction[]>  {
 //     return await Transaction.find({reason: reason}).sort({
 //         date: -1
-//     }).lean<ITransactionLean[]>();
+//     }).lean<ITransaction[]>();
 // }
 
 

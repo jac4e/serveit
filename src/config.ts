@@ -1,4 +1,4 @@
-import { IAccountForm, Roles } from "./_models/account.model.js";
+import { IAccountForm, Roles } from 'typeit';
 import { Secret } from 'jsonwebtoken'
 
 // Check for env vars
@@ -12,7 +12,7 @@ if (process.env.JWT_SECRET === undefined){
 const db = {
     user: "",
     pass: "",
-    url: "database",
+    url: "localhost",
     port: "27017",
     name: "spendit-db"
 }

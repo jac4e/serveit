@@ -1,49 +1,7 @@
-import mongoose, { Document } from 'mongoose';
-import validator from 'validator';
+import mongoose, { Document, Model } from 'mongoose';
+import { Roles, IAccountDocument } from 'typeit';
 
-export enum Roles {
-    Unverified = 'unverified',
-    User = 'user',
-    Admin = 'admin'
-}
-
-export interface IAccount extends Document {
-    role: Roles;
-    username: string;
-    firstName: string;
-    lastName: string;
-    email: string;
-    hash: string;
-    sessionid: string;
-    gid?: string;
-}
-
-export interface IAccountForm {
-    username: IAccount['username'];
-    firstName: IAccount['firstName'];
-    lastName: IAccount['lastName'];
-    email: IAccount['email'];
-    role: IAccount['role'];
-    password: string;
-    gid?: IAccount['gid'];
-}
-
-export interface IAccountLean {
-    username: IAccount['username'];
-    firstName: IAccount['firstName'];
-    lastName: IAccount['lastName'];
-    email: IAccount['email'];
-    role: IAccount['role'];
-    balance: bigint;
-    id: IAccount['id'];
-}
-
-export interface IAccountLogin {
-    username: IAccount['username'];
-    password: string;
-}
-
-const schema = new mongoose.Schema({
+const schema = new mongoose.Schema<IAccountDocument, Model<IAccountDocument>>({
     role: { type: String, trim: true, enum: Roles, required: true },
     username: { type: String, trim: true, unique: true, required: true },
     firstName: { type: String, trim: true, required: true },
@@ -86,4 +44,4 @@ function transformDoc(doc) {
     delete doc.sessionid;
 }
 
-export default mongoose.model<IAccount>('Account', schema);
+export default mongoose.model('Account', schema);

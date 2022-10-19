@@ -2,14 +2,14 @@ import express, { NextFunction, request, Response } from 'express';
 import expressJwt, { Request } from 'express-jwt';
 import Guard from 'express-jwt-permissions';
 import transaction from '../_helpers/transaction.js';
-import { IAccountForm, Roles } from '../_models/account.model.js';
+import { IAccountForm, Roles } from 'typeit';
 import accountService from './service.js';
 
 const router = express.Router();
 const guard = Guard({
     requestProperty: 'auth',
     permissionsProperty: 'permissions'
-  });
+});
 
 // Routes
 router.post('/auth', auth);
@@ -33,7 +33,7 @@ router.get('/', guard.check(Roles.Admin), getAll);
 
 // Public routes
 function auth(req, res, next) {
-    accountService.auth(req.body).then(account => res.json(account)).catch(err => next(err));
+    accountService.auth(req.body).then((resp) => res.json(resp)).catch(err => next(err));
 }
 
 // User available routes
@@ -62,7 +62,7 @@ function getSelfTransactions(req, res, next) {
     accountService.getSelfTransactions(selfId).then(resp => res.json(resp)).catch(err => next(err));
 }
 
-function register(req: {body: {form: IAccountForm; gid: string}}, res, next) {
+function register(req: { body: IAccountForm }, res, next) {
     // Public registration
     const googleFirstName = 'BLANK'
     const googleLastName = 'BLANK'
@@ -71,11 +71,10 @@ function register(req: {body: {form: IAccountForm; gid: string}}, res, next) {
 
     // registration form initiated creation
     // get email, name, and google account id from google
-    let accountParam = req.body.form
+    let accountParam = req.body
     accountParam.firstName = googleFirstName;
     accountParam.lastName = googleLastName;
     accountParam.email = googleEmail;
-    accountParam.gid = googleId;
     accountParam.role = Roles.Unverified;
 
     accountService.create(accountParam).then(() => res.json({})).catch(err => next(err))
@@ -83,7 +82,7 @@ function register(req: {body: {form: IAccountForm; gid: string}}, res, next) {
 
 // Private routes
 
-function create(req: {body: IAccountForm}, res, next) {
+function create(req: { body: IAccountForm }, res, next) {
     // Registration by admin, req.body
     // Admin created accounts don't need google association
     req.body.gid === undefined;
@@ -121,11 +120,11 @@ function getTransactions(req, res, next) {
     transaction.getById(req.params['accountId']).then(resp => res.json(resp)).catch(err => next(err));
 }
 
-function getIdFromPayload(req: Request): string{
-    if (req.auth === undefined){
+function getIdFromPayload(req: Request): string {
+    if (req.auth === undefined) {
         throw "jwt payload not found in request"
     }
-    if (req.auth.sub === undefined){
+    if (req.auth.sub === undefined) {
         throw "jwt payload sub not found in request"
     }
     return req.auth.sub

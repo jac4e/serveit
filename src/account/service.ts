@@ -7,8 +7,7 @@ import transaction from '../_helpers/transaction.js';
 import { zxcvbn, zxcvbnOptions } from '@zxcvbn-ts/core'
 import zxcvbnCommonPackage from '@zxcvbn-ts/language-common';
 import zxcvbnEnPackage from '@zxcvbn-ts/language-en';
-import {IAccount, IAccountForm, IAccountLean, IAccountLogin, Roles} from '../_models/account.model.js';
-import { ITransaction, ITransactionLean } from '../_models/transaction.model.js';
+import { ITransaction, IAccountDocument, IAccountForm, IAccount, ICredentials, Roles } from 'typeit';
 
 
 const zxcvbnBaseSettings = {
@@ -26,12 +25,9 @@ const Account = db.account;
 const secret = config.secret;
 const saltRounds = 10;
 
-async function auth({
-  username,
-  password
-}: IAccountLogin): Promise<IAccountLean & {token: string}>  {
+async function auth(credentials: ICredentials): Promise<{ account: IAccount, token: string }> {
   const account = await Account.findOne({
-    username: username
+    username: credentials.username
   });
 
   // Account not found
@@ -39,7 +35,7 @@ async function auth({
     // compare to random hash to help mitigate timing attacks
     // this may be foolish
     // it may also prevent people from discovering user accounts through brute force
-    await bcrypt.compare(password, "$2b$10$rQweXBgpHcRXB8nblwv7JO4URRkvC7GjMhNgDPJA35HNcG383YG8W")
+    await bcrypt.compare(credentials.password, "$2b$10$rQweXBgpHcRXB8nblwv7JO4URRkvC7GjMhNgDPJA35HNcG383YG8W")
     throw `Auth error username or password is incorrect`
   }
 
@@ -48,7 +44,7 @@ async function auth({
     throw `Auth error account not verified`
   }
 
-  const match = await bcrypt.compare(password, account.hash)
+  const match = await bcrypt.compare(credentials.password, account.hash)
 
   if (account && match) {
     const token = jwt.sign({
@@ -60,11 +56,13 @@ async function auth({
     })
     const balance = await getBalance(account.id);
     // toJSON sanitization is not working
-    const sanitizedAccount = await Account.findById(account.id).lean<IAccountLean>();
+    const sanitizedAccount = await Account.findById(account.id).lean<IAccount>();
     return {
-      ...sanitizedAccount,
-      balance,
-      token
+      account: {
+        ...sanitizedAccount,
+        balance: balance,
+      },
+      token: token
     }
   } else {
     throw `Auth error username or password is incorrect`
@@ -78,8 +76,8 @@ async function create(accountParam: IAccountForm): Promise<void> {
 
   // make sure username is not taken
   if (await Account.findOne({
-      username: accountParam.username
-    })) {
+    username: accountParam.username
+  })) {
     throw `username '${accountParam.username}' is already taken`
   }
 
@@ -90,7 +88,7 @@ async function create(accountParam: IAccountForm): Promise<void> {
   }
 
   const account = new Account(accountParam)
-  
+
   // hash password
   if (accountParam.password) {
     account.hash = bcrypt.hashSync(accountParam.password, saltRounds);
@@ -126,15 +124,13 @@ async function create(accountParam: IAccountForm): Promise<void> {
 // }
 
 
-async function getSelfTransactions(id: string): Promise<ITransactionLean[]> {
-  // need this specific function to remove account id from transaction list
-  const transactions = await transaction.getByAccountId(id);
-  return transactions.map(({accountid, ...keepAttrs}) => keepAttrs);
+async function getSelfTransactions(id: string): Promise<ITransaction[]> {
+  return await transaction.getByAccountId(id);
 }
 
 // Private account functions
 
-async function getBalance(id: string): Promise<bigint>{
+async function getBalance(id: string): Promise<bigint> {
   // transaction based balance
   // console.log(`id: ${id}`)
   return await transaction.getBalanceByAccountId(id)
@@ -142,8 +138,8 @@ async function getBalance(id: string): Promise<bigint>{
 }
 
 async function resetSession(id: string): Promise<void> {
-  Account.findById(id, (account: IAccount | null)=> {
-    if (account === null){
+  Account.findById(id, (account: IAccountDocument | null) => {
+    if (account === null) {
       throw 'Account not found'
     }
     account.sessionid = randomUUID();
@@ -151,22 +147,22 @@ async function resetSession(id: string): Promise<void> {
   });
 }
 
-async function getAll(): Promise<IAccountLean[]> {
-  const accounts = await Account.find({}).lean<IAccountLean[]>();
+async function getAll(): Promise<IAccount[]> {
+  const accounts = await Account.find({}).lean<IAccount[]>();
   // console.log(accounts)
   for (let index = 0; index < accounts.length; index++) {
-    accounts[index].balance = await getBalance(accounts[index].id) 
+    accounts[index].balance = await getBalance(accounts[index].id)
   }
   // console.log(test);
   return accounts;
 }
 
 
-async function getById(id: string): Promise<IAccountLean> {
+async function getById(id: string): Promise<IAccount> {
   // console.log("getbyid",id)
-  const account = await Account.findById(id).lean<IAccountLean>();
+  const account = await Account.findById(id).lean<IAccount>();
   const balance = await getBalance(id);
-  if (account === null){
+  if (account === null) {
     throw "account not found"
   }
   account.balance = balance;
@@ -175,11 +171,11 @@ async function getById(id: string): Promise<IAccountLean> {
 }
 
 async function verify(id: string): Promise<void> {
-  let account = await Account.findById<IAccount>(id);
-  if (account === null){
+  let account = await Account.findById<IAccountDocument>(id);
+  if (account === null) {
     throw "account not found"
   }
-  if (account.role !== Roles.Unverified){
+  if (account.role !== Roles.Unverified) {
     throw "account already verified"
   }
   account.role = Roles.User;
@@ -192,7 +188,7 @@ async function pay(amount: bigint, id: string): Promise<boolean> {
   const account = await Account.findById(id);
   const balance = await getBalance(id);
   // console.log('pay',amount,balance)
-  if (amount > balance){
+  if (amount > balance) {
     return false;
   }
 

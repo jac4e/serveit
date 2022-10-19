@@ -1,48 +1,8 @@
-import mongoose, { Document, Types, Model, Schema } from 'mongoose';
-import validator from 'validator';
-import { ICartItem, IProduct, IProductLean } from './product.model';
+import mongoose, { Model, Schema } from 'mongoose';
+import { ITransactionDocument } from 'typeit';
 
-export enum TransactionType {
-    Debit = 'debit',
-    Credit = 'credit'
-}
 
-export interface ITransaction extends Document {
-    date: Date;
-    accountid: string;
-    type: TransactionType;
-    reason: string;
-    products: ITransactionItem[];
-    total: string;
-}
-
-export interface ITransactionLean {
-    id: ITransaction['id'];
-    date: ITransaction['date'];
-    accountid?: ITransaction['accountid'];
-    type: ITransaction['type'];
-    reason: ITransaction['reason'];
-    products: ITransaction['products'];
-    total: bigint;
-}
-
-export interface ITransactionForm {
-    accountid: ITransaction['accountid'];
-    type: ITransaction['type'];
-    reason: ITransaction['reason'];
-    products: ITransaction['products'];
-    total: string;
-}
-
-export interface ITransactionItem {
-    name: IProduct['name'];
-    description: IProduct['description'];
-    price:  string;
-    amount:  string;
-    total:  string;
-}
-
-const schema = new Schema<ITransaction, Model<ITransaction>>({
+const schema = new Schema<ITransactionDocument, Model<ITransactionDocument>>({
     date: {
         type: Date,
         default: Date.now
