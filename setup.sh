@@ -75,7 +75,8 @@ if [[ $ENV = "production" ]]; then
     DEFAULT_DB_URL="database"
     DEFAULT_ADMIN_USER="admin"
     DEFAULT_ADMIN_PASSWORD="randomly generated."
-    DEFAULT_ADMIN_NAME="$DEFAULT_ADMIN_USER ${DEFAULT_ADMIN_USER}son"
+    DEFAULT_ADMIN_FIRST="$DEFAULT_ADMIN_USER"
+    DEFAULT_ADMIN_LAST="${DEFAULT_ADMIN_USER}son"
     DEFAULT_ADMIN_EMAIL="doesnotexist@ualberta.ca"
 elif [[ $ENV = "development" ]]; then
     # Development defaults
@@ -86,7 +87,8 @@ elif [[ $ENV = "development" ]]; then
     DEFAULT_FRONTEND_URL="localhost"
     DEFAULT_ADMIN_USER="dev"
     DEFAULT_ADMIN_PASSWORD="forthebirds"
-    DEFAULT_ADMIN_NAME="$DEFAULT_ADMIN_USER ${DEFAULT_ADMIN_USER}son"
+    DEFAULT_ADMIN_FIRST="$DEFAULT_ADMIN_USER"
+    DEFAULT_ADMIN_LAST="${DEFAULT_ADMIN_USER}son"
     DEFAULT_ADMIN_EMAIL='doesnotexist@ualberta.ca'
 fi
 
@@ -97,7 +99,8 @@ MSG_BACKEND_URL="Enter the backend url, default is '${DEFAULT_BACKEND_URL}': "
 MSG_BACKEND_PORT="Enter the backend port, default is '${DEFAULT_BACKEND_PORT}': "
 MSG_FRONTEND_URL="Enter the frontend url, default is '${DEFAULT_FRONTEND_URL}': "
 MSG_ADMIN_USER="Enter the username for the admin user, default is '${DEFAULT_ADMIN_USER}': "
-MSG_ADMIN_NAME="Enter the name for the admin user, default is '${DEFAULT_ADMIN_NAME}': "
+MSG_ADMIN_FIRST="Enter the first name for the admin user, default is '${DEFAULT_ADMIN_FIRST}': "
+MSG_ADMIN_LAST="Enter the last name for the admin user, default is '${DEFAULT_ADMIN_LAST}': "
 MSG_ADMIN_PASSWORD="Enter the password for the admin user, default is '${DEFAULT_ADMIN_PASSWORD}' \n\
 NOTE: It is highly recommended to use the default \n\n\
 password: "
@@ -111,7 +114,8 @@ user_prompt BACKEND_PORT
 user_prompt FRONTEND_URL
 user_prompt ADMIN_USER
 user_prompt ADMIN_EMAIL
-user_prompt ADMIN_NAME
+user_prompt ADMIN_FIRST
+user_prompt ADMIN_LAST
 user_prompt -s ADMIN_PASSWORD
 
 # Generate JWT secret
@@ -120,6 +124,6 @@ export JWT_SECRET=$(dd if=/dev/urandom bs=96 count=1 status=none | base64 | tr -
 # export dollar sign for envsubst
 export DOLLAR='$'
 # Process templates
-cat ${SCRIPT_DIR}/templates/config.ts.template | envsubst  > ${SCRIPT_DIR}/src/config.ts
-mkdir ${SCRIPT_DIR}/config
-echo -e "ADMIN_PASSWORD=$ADMIN_PASSWORD\nJWT_SECRET=$JWT_SECRET" > ${SCRIPT_DIR}/config/backend.env
+# cat ${SCRIPT_DIR}/templates/config.ts.template | envsubst  > ${SCRIPT_DIR}/src/config.ts
+# mkdir ${SCRIPT_DIR}/config
+echo -e "DB_URL=$DB_URL\nDB_PORT=$DB_PORT\nBACKEND_URL=$BACKEND_URL\nBACKEND_PORT=$BACKEND_PORT\nFRONTEND_URL=$FRONTEND_URL\nADMIN_USER=$ADMIN_USER\nADMIN_EMAIL=$ADMIN_EMAIL\nADMIN_FIRST=$ADMIN_FIRST\nADMIN_LAST=$ADMIN_LAST\nADMIN_PASSWORD=$ADMIN_PASSWORD\nJWT_SECRET=$JWT_SECRET" > ${SCRIPT_DIR}/.env

@@ -5,3 +5,4 @@ src/deploy/config.js
 dist/
 tsconfig.tsbuildinfo
 
+.env
