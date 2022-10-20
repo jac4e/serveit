@@ -1,5 +1,6 @@
 import express from 'express';
 import Guard from 'express-jwt-permissions';
+import { isICartSerialized, isIProduct, isIProductForm } from 'typeit';
 import storeService from './service.js';
 
 const router = express.Router();
@@ -24,13 +25,24 @@ function getProducts(req, res, next) {
 }
 
 function createProduct(req, res, next) {
-    storeService.createProduct(req.body)
+    // Check if body is an IProductForm type
+    const data = req.body;
+    console.log(data)
+    if(!isIProductForm(data)){
+        console.log(data)
+        throw 'request body is of wrong type, must be IProductForm'
+    }
+    storeService.createProduct(data)
         .then(() => res.json({}))
         .catch(err => next(err))
 }
 
 function updateProductById(req, res, next) {
-    storeService.updateProductById(req.params['productId'],req.body)
+    const data = req.body;
+    if(!isIProductForm(data)){
+        throw 'request body is of wrong type, must be IProductForm'
+    }
+    storeService.updateProductById(req.params['productId'],data)
         .then(() => res.json({}))
         .catch(err => next(err))
 }
@@ -49,7 +61,11 @@ function deleteProductById(req, res, next) {
 
 function purchase(req, res, next) {
     // console.log("purchasing")
-    storeService.purchaseCart(req.user, req.body.cart).then(() => res.json({})).catch(err => next(err));
+    const data = req.body;
+    if(!isICartSerialized(data)){
+        throw 'request body is of wrong type, must be ICartSerialized'
+    }
+    storeService.purchaseCart(req.auth, data).then(() => res.json({})).catch(err => next(err));
 }
 
 export default router;

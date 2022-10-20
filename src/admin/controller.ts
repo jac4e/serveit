@@ -1,5 +1,6 @@
 import express from 'express';
 import Guard from 'express-jwt-permissions';
+import { isITransactionForm } from 'typeit';
 import adminService from './service.js';
 
 const router = express.Router();
@@ -18,7 +19,13 @@ function getAllTransactions(req, res, next) {
 }
 
 function createTransactions(req, res, next) {
-    adminService.createTransaction(req.body).then(() => res.json({})).catch(err => next(err))
+    // Check if body is an ITransactionForm type
+    const data = req.body;
+    if(!isITransactionForm(data)){
+        console.log(data);
+        throw 'request body is of wrong type, must be ITransactionForm'
+    }
+    adminService.createTransaction(data).then(() => res.json({})).catch(err => next(err))
 }
 
 export default router;
