@@ -7,7 +7,7 @@ import transaction from '../_helpers/transaction.js';
 import { zxcvbn, zxcvbnOptions } from '@zxcvbn-ts/core'
 import zxcvbnCommonPackage from '@zxcvbn-ts/language-common';
 import zxcvbnEnPackage from '@zxcvbn-ts/language-en';
-import { ITransaction, IAccountDocument, IAccountForm, IAccount, ICredentials, Roles } from 'typeit';
+import { ITransaction, IAccountDocument, IAccountForm, IAccount, ICredentials, Roles } from 'typesit';
 
 
 const zxcvbnBaseSettings = {
@@ -46,7 +46,7 @@ async function auth(credentials: ICredentials): Promise<{ account: IAccount, tok
 
   const match = await bcrypt.compare(credentials.password, account.hash)
 
-  if (account && match) {
+  if (match) {
     const token = jwt.sign({
       sub: account.id,
       sid: account.sessionid,
@@ -96,6 +96,13 @@ async function create(accountParam: IAccountForm): Promise<void> {
   }
   if (accountParam.role === undefined) {
     throw 'role is required to create account'
+  }
+
+  // Email validation
+  // must end in '@ualberta.ca'
+  // This may be missing some cases where the email is not a ualberta email
+  if (!/@ualberta.ca$/.test(accountParam.email)) {
+    throw `email must be of the ualberta.ca domain`;
   }
 
   // make sure username is not taken
@@ -157,13 +164,12 @@ async function getBalance(id: string): Promise<bigint> {
 }
 
 async function resetSession(id: string): Promise<void> {
-  Account.findById(id, (account: IAccountDocument | null) => {
-    if (account === null) {
-      throw 'Account not found'
-    }
-    account.sessionid = randomUUID();
-    account.save();
-  });
+  const account = await Account.findById(id)
+  if (account === null) {
+    throw 'Account not found'
+  }
+  account.sessionid = randomUUID();
+  account.save();
 }
 
 async function getAll(): Promise<IAccount[]> {
