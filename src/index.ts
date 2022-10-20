@@ -37,12 +37,6 @@ async function deploy() {
 
 deploy();
 
-// Hijack bigint for json serialization
-
-(BigInt.prototype as any).toJSON = function () {
-  return this.toString();
-};
-
 // api routes
 app.use('/api', api);
 
