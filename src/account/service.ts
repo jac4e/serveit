@@ -72,7 +72,31 @@ async function auth(credentials: ICredentials): Promise<{ account: IAccount, tok
 // Private registration of verified accounts
 async function create(accountParam: IAccountForm): Promise<void> {
   // validate
-  console.log(JSON.stringify(accountParam))
+  // we need to ensure following properties exist:
+  // username
+  // password
+  // firstName
+  // lastName
+  // email
+  // role
+  if (accountParam.username === undefined) {
+    throw 'username is required to create account'
+  }
+  if (accountParam.password === undefined) {
+    throw 'password is required to create account'
+  }
+  if (accountParam.firstName === undefined) {
+    throw 'firstName is required to create account'
+  }
+  if (accountParam.lastName === undefined) {
+    throw 'lastName is required to create account'
+  }
+  if (accountParam.email === undefined) {
+    throw 'email is required to create account'
+  }
+  if (accountParam.role === undefined) {
+    throw 'role is required to create account'
+  }
 
   // make sure username is not taken
   if (await Account.findOne({
@@ -122,11 +146,6 @@ async function create(accountParam: IAccountForm): Promise<void> {
 //     pageSize: results.length
 //   }
 // }
-
-
-async function getSelfTransactions(id: string): Promise<ITransaction[]> {
-  return await transaction.getByAccountId(id);
-}
 
 // Private account functions
 
@@ -182,17 +201,28 @@ async function verify(id: string): Promise<void> {
   account.save();
 }
 
-async function pay(amount: bigint, id: string): Promise<boolean> {
+async function pay(amount: bigint, id: string): Promise<void> {
   // makes payment on account based on the account Id
-  // returns true on success, false on failure
+  // throws an error if payment cannot be made
   const account = await Account.findById(id);
   const balance = await getBalance(id);
   // console.log('pay',amount,balance)
   if (amount > balance) {
-    return false;
+    throw 'Balance too low'
   }
+}
 
-  return true;
+async function updateAccountById(id: string, accountParam: IAccountForm) {
+  let account = await Account.findById<IAccountDocument>(id)
+  if (account === null) {
+      throw `Account '${id}' does not exist`;
+  }
+  account.set(accountParam);
+  account.save()
+}
+
+async function deleteAccountById(id: IAccount['id']): Promise<void> {
+    await Account.deleteOne({_id: id})
 }
 
 export default {
@@ -202,7 +232,8 @@ export default {
   getById,
   getBalance,
   resetSession,
-  getSelfTransactions,
+  updateAccountById,
+  deleteAccountById,
   pay,
   verify
   // search
