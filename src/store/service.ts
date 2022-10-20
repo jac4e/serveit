@@ -68,10 +68,10 @@ async function purchaseCart(payload: JwtPayload, cartSerialized: ICartSerialized
     if (cartSerialized.length < 1) {
         throw "Cart is empty"
     }
-    const products = await Product.find({'_id': { $in: cartSerialized.map((item) => item.id) } });
+    const products = await Product.find({'_id': { $in: cartSerialized.map((item: ICartItemSerialized): IProduct['id'] => item.id) } });
     // console.log(products)
     // create cart object for invoice
-    let cart = (await Product.find({'_id': { $in: cartSerialized.map((item) => item.id) } }).lean<IProduct[]>()).map<ICartItem>(({stock, price, ...keepAttrs}) => ({...keepAttrs, price: BigInt(price), amount: 0n, total: 0n}));
+    let cart = (await Product.find({'_id': { $in: cartSerialized.map((item: ICartItemSerialized): IProduct['id'] => item.id) } }).lean<IProduct[]>()).map(({stock, price, ...keepAttrs}: IProduct): ICartItem => ({...keepAttrs, price: BigInt(price), amount: 0n, total: 0n}));
     
     let sum = 0n;
     for (let index = 0; index < cartSerialized.length; index++) {
@@ -92,12 +92,13 @@ async function purchaseCart(payload: JwtPayload, cartSerialized: ICartSerialized
     }
 
     // console.log(cart)
-
     let transactionParams: ITransactionForm = {
         accountid: payload.sub,
         type: TransactionType.Debit,
         reason: 'Web Purchase',
-        products: cart.map<ITransactionItem>(({total, price, amount, ...rest}) => ({total: total.toString(), amount: amount.toString(), price: price.toString(), ...rest})),
+        products: cart.map((cartItem: ICartItem): ITransactionItem => {
+            return {total: cartItem.total.toString(), amount: cartItem.amount.toString(), name: cartItem.name, description: cartItem.description, price: cartItem.price.toString()};
+        }),
         total: sum.toString()
     }
 
