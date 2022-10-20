@@ -80,10 +80,10 @@ if [[ $ENV = "production" ]]; then
     DEFAULT_ADMIN_EMAIL="doesnotexist@ualberta.ca"
 elif [[ $ENV = "development" ]]; then
     # Development defaults
-    DEFAULT_DB_URL="database"
+    DEFAULT_DB_URL="localhost"
     DEFAULT_DB_PORT="27017"
-    DEFAULT_BACKEND_URL="http://localhost:3001/api"
-    DEFAULT_BACKEND_PORT="3001"
+    DEFAULT_BACKEND_URL="http://localhost:3000/api"
+    DEFAULT_BACKEND_PORT="3000"
     DEFAULT_FRONTEND_URL="localhost"
     DEFAULT_ADMIN_USER="dev"
     DEFAULT_ADMIN_PASSWORD="forthebirds"
