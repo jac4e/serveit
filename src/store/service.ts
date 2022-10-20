@@ -3,7 +3,7 @@ import { JwtPayload } from 'jsonwebtoken';
 import config from '../config.js';
 import transactionService from '../_helpers/transaction.js';
 import accountService from '../account/service.js';
-import { ICartItem, ICartItemSerialized, IProduct, IProductDocument, IProductForm, ITransactionForm, ITransactionItem, TransactionType } from 'typeit';
+import { ICartItem, ICartItemSerialized, ICartSerialized, IProduct, IProductDocument, IProductForm, ITransactionForm, ITransactionItem, TransactionType } from 'typeit';
 
 const Product = db.product;
 
@@ -53,7 +53,7 @@ async function deleteProductById(id: IProduct['id']): Promise<void> {
     await Product.deleteOne({_id: id})
 }
 
-async function purchaseCart(payload: JwtPayload, cartSerialized: ICartItemSerialized[]): Promise<void> {
+async function purchaseCart(payload: JwtPayload, cartSerialized: ICartSerialized): Promise<void> {
     // cart is array of ids
     //
     //    [ ids ... ]
@@ -100,21 +100,16 @@ async function purchaseCart(payload: JwtPayload, cartSerialized: ICartItemSerial
         products: cart.map<ITransactionItem>(({total, price, amount, ...rest}) => ({total: total.toString(), amount: amount.toString(), price: price.toString(), ...rest})),
         total: sum.toString()
     }
-    // console.log(transactionParams)
-    // console.log(transactionParams)
-    if (await accountService.pay(sum, payload.sub) !== true){
-        // payment error
-        throw "Payment error"
-    }
 
-    // payment has complete, can now reduce stock levels
+    // Check if account has enough balance and create a transaction
+    await accountService.pay(sum, payload.sub);
+    await transactionService.create(transactionParams);
+
+    // transaction has complete, can now reduce stock levels
     for (let index = 0; index < cart.length; index++) {
         products[index].stock = (BigInt(products[index].stock) - BigInt(cart[index].amount)).toString();
-        // console.log(products[index])
         products[index].save();
     }
-
-    await transactionService.create(transactionParams);
 }
 
 export default { getAllProducts, deleteProductById, purchaseCart, createProduct, getProductById, updateProductById}

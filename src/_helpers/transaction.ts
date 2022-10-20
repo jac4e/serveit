@@ -19,7 +19,6 @@ async function create(transactionParam: ITransactionForm): Promise<void> {
     let transaction = new Transaction();
 
     transaction.set(transactionParam);
-
     await transaction.save()
 }
 
