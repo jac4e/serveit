@@ -1,6 +1,6 @@
 import express from 'express';
 import Guard from 'express-jwt-permissions';
-import { isITransactionForm } from 'typeit';
+import { isITransactionForm } from 'typesit';
 import adminService from './service.js';
 
 const router = express.Router();

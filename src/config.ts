@@ -1,4 +1,4 @@
-import { IAccountForm, Roles } from 'typeit';
+import { IAccountForm, Roles } from 'typesit';
 import { Secret } from 'jsonwebtoken'
 
 // Check for env vars

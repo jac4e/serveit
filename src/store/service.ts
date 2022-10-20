@@ -3,7 +3,7 @@ import { JwtPayload } from 'jsonwebtoken';
 import config from '../config.js';
 import transactionService from '../_helpers/transaction.js';
 import accountService from '../account/service.js';
-import { ICartItem, ICartItemSerialized, ICartSerialized, IProduct, IProductDocument, IProductForm, ITransactionForm, ITransactionItem, TransactionType } from 'typeit';
+import { ICartItem, ICartItemSerialized, ICartSerialized, IProduct, IProductDocument, IProductForm, ITransactionForm, ITransactionItem, TransactionType } from 'typesit';
 
 const Product = db.product;
 

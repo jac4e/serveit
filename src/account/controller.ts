@@ -2,7 +2,7 @@ import express, { NextFunction, request, Response } from 'express';
 import expressJwt, { Request } from 'express-jwt';
 import Guard from 'express-jwt-permissions';
 import transaction from '../_helpers/transaction.js';
-import { IAccountForm, isIAccountForm, ICredentials, isICredentials, Roles } from 'typeit';
+import { IAccountForm, isIAccountForm, ICredentials, isICredentials, Roles } from 'typesit';
 import accountService from './service.js';
 
 const router = express.Router();

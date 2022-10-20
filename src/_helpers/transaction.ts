@@ -1,6 +1,6 @@
 import db from './db.js';
 import accountService from '../account/service.js';
-import { ITransaction, IAccount, IProduct, ITransactionDocument, ITransactionForm, ITransactionItem, TransactionType } from 'typeit';
+import { ITransaction, IAccount, IProduct, ITransactionDocument, ITransactionForm, ITransactionItem, TransactionType } from 'typesit';
 
 const Transaction = db.transaction;
 

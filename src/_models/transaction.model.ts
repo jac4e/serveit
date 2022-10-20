@@ -1,5 +1,5 @@
 import mongoose, { Model, Schema } from 'mongoose';
-import { ITransactionDocument } from 'typeit';
+import { ITransactionDocument } from 'typesit';
 
 
 const schema = new Schema<ITransactionDocument, Model<ITransactionDocument>>({

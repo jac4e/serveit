@@ -1,6 +1,6 @@
 import db from '../_helpers/db.js';
 import transaction from '../_helpers/transaction.js';
-import { ITransaction, ITransactionForm } from 'typeit';
+import { ITransaction, ITransactionForm } from 'typesit';
 
 const Account = db.account
 const Product = db.product

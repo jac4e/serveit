@@ -1,5 +1,5 @@
 import mongoose, { Document, Model } from 'mongoose';
-import { Roles, IAccountDocument } from 'typeit';
+import { Roles, IAccountDocument } from 'typesit';
 
 const schema = new mongoose.Schema<IAccountDocument, Model<IAccountDocument>>({
     role: { type: String, trim: true, enum: Roles, required: true },

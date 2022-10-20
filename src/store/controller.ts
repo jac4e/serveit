@@ -1,6 +1,6 @@
 import express from 'express';
 import Guard from 'express-jwt-permissions';
-import { isICartSerialized, isIProduct, isIProductForm } from 'typeit';
+import { isICartSerialized, isIProduct, isIProductForm } from 'typesit';
 import storeService from './service.js';
 
 const router = express.Router();

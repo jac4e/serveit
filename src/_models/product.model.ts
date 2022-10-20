@@ -1,5 +1,5 @@
 import mongoose, { Document, Model } from 'mongoose';
-import { IProductDocument } from 'typeit';
+import { IProductDocument } from 'typesit';
 
 const schema = new mongoose.Schema<IProductDocument, Model<IProductDocument>>({
     name: {
