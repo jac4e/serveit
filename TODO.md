@@ -3,7 +3,7 @@
 ## Pre beta launch
 
 - [x] All todo notes in frontend templates
-- [ ] split frontend and backend into seperate repos
+- [x] split frontend and backend into seperate repos
 
 ### frontend
 
@@ -35,14 +35,15 @@
 ### Finalize
 
 - [ ] mongodb volume backup
-- [ ] way to verify identity of ualberta emails
+- [x] way to verify identity of ualberta emails
 - [ ] admin accounts should not be able to use the store
 - [x] database volume not correctly set missing ./
 - [x] deploy folder does not exist in repo
-- [ ] split frontend and backend into seperate parts
+- [x] split frontend and backend into seperate parts
 - [ ] Lint, spelling, format and code review!!!
 - [ ] ensure all version numbers are correct
 - [ ] look into caching
+  - [ ] <https://restfulapi.net/caching/>
 - [ ] brief documentation
 - [ ] Squash entire history
 - [ ] email notifications
@@ -64,7 +65,7 @@
 - [ ] dashboard form
   - [ ] proper responsive design
   - [ ] Proper erroring
-    - [ ] invalid input, server errors
+    - [x] invalid input, server errors
 - [ ] Demo data generation
 - [ ] add transaction type should be dropdown
 - [ ] add user role should be dropdown
@@ -78,20 +79,21 @@
 
 - [ ] support podman and docker
 - [ ] add assistive tech compatibility
-- [ ] convert backend to typescript
-- [ ] Reload lists when item has been edited
+- [x] convert backend to typescript
+- [x] Reload lists when item has been edited
 - [ ] proper account editing
-- [ ] fix account export
+- [x] fix account export
 
 ## deploy bugs
 
 - [x] when in slim screen mode and no products exists you are unable to open the menu
 - [x] inventory on store screen is not updated when you have 0 products, add one, then go back
 - [ ] button css incorrect
-- [ ] admin account was not set up correctly based on what was entered into the prompt (used the default email and username)
+- [x] admin account was not set up correctly based on what was entered into the prompt (used the default email and username)
 
 ## Regular bugs
 
-- [ ] clicking on dashboard/account then going to a different submenu from default then clicking dashboard again changes router outlet but not the nav bar
-- [ ] two request for products when going to store page
-- [ ] dashboard product list doesn't update after editing product
+- [x] clicking on dashboard/account then going to a different submenu from default then clicking dashboard again changes router outlet but not the nav bar
+- [x] two request for products when going to store page
+- [x] dashboard product list doesn't update after editing product
+- [x] web purchase transactions do not show in view-modal

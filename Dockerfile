@@ -4,10 +4,13 @@ ENV CI=1
 
 RUN apt-get update && apt-get install -y gettext
 
+RUN mkdir /typeit
+COPY ./typeit /typeit
 RUN mkdir /src
 WORKDIR /src
 
 RUN npm install -g @angular/cli@14.2.1
+RUN npm install -g typescript
 RUN npm install -g nodemon
 
 CMD ["tail", "-f", "/dev/null"]
