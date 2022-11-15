@@ -4,8 +4,6 @@ ENV CI=1
 
 RUN apt-get update && apt-get install -y gettext
 
-RUN mkdir /typeit
-COPY ./typeit /typeit
 RUN mkdir /src
 WORKDIR /src
 

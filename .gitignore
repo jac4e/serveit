@@ -6,3 +6,6 @@ dist/
 tsconfig.tsbuildinfo
 
 .env
+credentials.json
+token.json
+failed_messages

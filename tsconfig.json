@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     /* Docs: https://www.typescriptlang.org/tsconfig */ "target": "es2020",
-    "module": "es2020",
+    "module": "es2022",
     "outDir": "./dist",
     "rootDir": "src",
     "strict": true,
@@ -11,7 +11,7 @@
     "allowJs": false,
     "moduleResolution": "node",
     "types": ["node"],
-    "lib": ["es6"],
+    "lib": ["es7"],
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,

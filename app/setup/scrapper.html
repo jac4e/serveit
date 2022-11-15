@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+
+<head>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-Zenh87qX5JnK2Jl0vWa8Ck2rdkQ2Bzep5IDxbcnCeuOxjzrPF/et3URy9Bv1WTRi" crossorigin="anonymous">
+</head>
+
+<body>
+    <div class="container">
+        <div class="row">
+            <div class="col-12">
+                <h1>Initial setup</h1>
+            </div>
+            <div class="col-12">
+                <h4>Email scrapper setup</h2>
+            </div>
+            <div class="col-12">
+                <form id="admin" method="post" action="setup/gmail">
+                    <div class="form-text">By clicking continue, you will be redirected to a google oauth page. This will be used to authorize
+                        the backend for read, modify, and send email permissions on your club gmail account. The
+                        authorized permissions will only be used to send notification emails to users, site reports
+                        to admins, and monitor for incoming e-transfer auto deposits.</div>
+                    <div class="mb-3 form-check">
+                      <input type="checkbox" class="form-check-input" id="termsagree">
+                      <label class="form-check-label" for="termsagree">I have read and agree to the above paragraph</label>
+                    </div>
+                    <div>
+                        <button class="btn btn-primary" onclick="submitForm(event)">Submit</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>
