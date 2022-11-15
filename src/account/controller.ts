@@ -25,7 +25,7 @@ router.post('/create', guard.check(Roles.Admin), create);
 router.get('/:accountId/resetSession', guard.check(Roles.Admin), resetSession);
 router.get('/:accountId/balance', guard.check(Roles.Admin), getBalance);
 router.get('/:accountId/transaction', guard.check(Roles.Admin), getTransactions);
-router.put('/:accountId/verify', guard.check(Roles.Admin), verify);
+router.put('/:accountId/verify/:role', guard.check(Roles.Admin), verify);
 router.delete('/:accountId', guard.check(Roles.Admin), deleteAccountById);
 router.put('/:accountId', guard.check(Roles.Admin), updateAccountById);
 router.get('/', guard.check(Roles.Admin), getAll);
@@ -109,7 +109,7 @@ function getAll(req, res, next) {
 }
 
 function verify(req, res, next) {
-    accountService.verify(req.params['accountId']).then(resp => res.json(resp)).catch(err => next(err));
+    accountService.verify(req.params['accountId'],req.params['role']).then(resp => res.json(resp)).catch(err => next(err));
 }
 
 function resetSession(req, res, next) {

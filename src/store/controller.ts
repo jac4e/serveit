@@ -1,6 +1,6 @@
 import express from 'express';
 import Guard from 'express-jwt-permissions';
-import { isICartSerialized, isIProduct, isIProductForm } from 'typesit';
+import { isICartSerialized, isIProduct, isIProductForm, Roles } from 'typesit';
 import storeService from './service.js';
 
 const router = express.Router();
@@ -11,12 +11,12 @@ const guard = Guard({
 
 // Routes
 router.get('/products', getProducts)
-router.post('/purchase', purchase)
+router.post('/purchase', guard.check([Roles.Member, Roles.NonMember]), purchase)
 
 router.post('/products', createProduct)
-router.put('/products/:productId', guard.check('admin'), updateProductById)
+router.put('/products/:productId', guard.check(Roles.Admin), updateProductById)
 router.get('/products/:productId', getProductById)
-router.delete('/products/:productId', guard.check('admin'), deleteProductById)
+router.delete('/products/:productId', guard.check(Roles.Admin), deleteProductById)
 
 function getProducts(req, res, next) {
     storeService.getAllProducts()

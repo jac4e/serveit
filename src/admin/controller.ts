@@ -1,6 +1,6 @@
 import express from 'express';
 import Guard from 'express-jwt-permissions';
-import { isITransactionForm } from 'typesit';
+import { isITransactionForm, Roles } from 'typesit';
 import adminService from './service.js';
 
 const router = express.Router();
@@ -9,7 +9,7 @@ const guard = Guard({
     permissionsProperty: 'permissions'
   })
 
-router.use(guard.check('admin'))
+router.use(guard.check(Roles.Admin))
 router.get('/transactions', getAllTransactions);
 router.post('/transactions', createTransactions);
 

@@ -195,7 +195,7 @@ async function getById(id: string): Promise<IAccount> {
   return account;
 }
 
-async function verify(id: string): Promise<void> {
+async function verify(id: string, role: Roles): Promise<void> {
   let account = await Account.findById<IAccountDocument>(id);
   if (account === null) {
     throw "account not found"
@@ -203,7 +203,10 @@ async function verify(id: string): Promise<void> {
   if (account.role !== Roles.Unverified) {
     throw "account already verified"
   }
-  account.role = Roles.User;
+  if (role === Roles.Admin || role === Roles.Unverified) {
+    throw "cannot verify user as admin or unverified"
+  }
+  account.role = role;
   account.save();
 }
 
