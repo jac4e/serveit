@@ -1,6 +1,6 @@
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
-import config from '../config.js';
+import {config} from '../configuration/config.js';
 import db from '../_helpers/db.js';
 import { randomUUID } from 'crypto';
 import transaction from '../_helpers/transaction.js';
@@ -22,7 +22,7 @@ const zxcvbnBaseSettings = {
 zxcvbnOptions.setOptions(zxcvbnBaseSettings)
 
 const Account = db.account;
-const secret = config.secret;
+const secret = config.backend.jwt;
 const saltRounds = 10;
 
 async function auth(credentials: ICredentials): Promise<{ account: IAccount, token: string }> {

@@ -15,7 +15,7 @@ const guard = Guard({
 router.post('/auth', auth);
 
 router.get('/self', getSelf);
-router.post('/self/resetSession', resetSessionSelf);
+router.get('/self/resetSession', resetSessionSelf);
 router.get('/self/balance', getSelfBalance);
 router.get('/self/transactions', getSelfTransactions);
 router.put('/self', updateSelf);

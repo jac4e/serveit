@@ -1,6 +1,6 @@
 import db from '../_helpers/db.js';
 import { JwtPayload } from 'jsonwebtoken';
-import config from '../config.js';
+import {config} from '../configuration/config.js';
 import transactionService from '../_helpers/transaction.js';
 import accountService from '../account/service.js';
 import { ICartItem, ICartItemSerialized, ICartSerialized, IProduct, IProductDocument, IProductForm, ITransactionForm, ITransactionItem, TransactionType } from 'typesit';

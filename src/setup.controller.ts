@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { Request } from 'express';
 import accounts from './account/controller.js';
 import admin from './admin/controller.js';
 import store from './store/controller.js';
@@ -7,92 +7,92 @@ import accountService from './account/service.js'
 import transactionService from './_helpers/transaction.js';
 import { join, dirname } from 'path';
 import { existsSync, statSync, readdirSync, readFileSync } from 'fs';
-
-// import guard from 'express-jwt-permissions';
-import bodyParser from 'body-parser';
-import cors from 'cors'
-import { app, __appPath } from './index.js';
+import { app, __distPath } from './index.js';
 import { authorize, generateAuthUrl, isAuthorized } from './_helpers/email.js';
 import { isIAccountForm, Roles } from 'typesit';
-import { account } from './config.js';
+import { config } from './configuration/config.js';
 
 const router = express.Router();
-router.use(bodyParser.urlencoded({
-    extended: true
-}));
 
 // flags
 const scrapperReady = () => {
-    return !isAuthorized()
+    // return !isAuthorized()
+    return true; // currently not implemented
 };
 
 const brandingReady = () => {
-    return existsSync(join(__appPath, '/assets/branding'))
+    // return existsSync(join(__distPath, '/assets/branding'))
+    return true; // currently not implemented
 }
 
-const accountReady = () => {
-    return existsSync(join(__appPath, '/index.html')) && brandingReady()
-}
-
-const databaseReady = () => {
-    return existsSync(join(__appPath, '/index.html')) && brandingReady()
+const accountReady = async () => {
+    const users = await accountService.getAll()
+    console.log("accountready?", !(users.length < 1))
+    return !(users.length < 1);
 }
 
 const appReady = () => {
-    return existsSync(join(__appPath, '/index.html')) && brandingReady()
-}
-const backendReady = () => {
-    return databaseReady() && accountReady()
-}
-
-export const shouldSetup = () => {
-    return !(appReady() && backendReady())
+    const app = existsSync(join(__distPath, '/index.html'));
+    console.log("appready?", config.backend.includeApp ? app : true)
+    return config.backend.includeApp ? app : true;
 }
 
-router.use(bodyParser.urlencoded({
-    extended: true
-}));
-router.use(bodyParser.json());
+export const shouldSetup = async () => {
+    return !(appReady() && scrapperReady() && (await accountReady()) && brandingReady())
+}
 
-router.get('/setup', base); 
-router.get('/setup/brandin', getBranding); 
-router.get('/setup/account', getAccount); 
-router.post('/setup/account', setupAccount); 
-router.get('/setup/scrapper', getScrapper); 
-router.post('/setup/scrapper', setupScrapper); 
-router.post('/goauth', authorizeGoogle);
+async function setupHandler(req, res, next) {
+    // Check for valid setup key
+    if (req.query['setup_key'] !== app.get('setup_key')) {
+        res.sendStatus(401);
+        return;
+    }
 
-function base(req, res) {
-    if (!shouldSetup()) {
+    // Routing
+    if (!await shouldSetup()) {
         res.redirect('/');
+        return;
     }
-    if (!brandingReady()) {
-        res.redirect('/setup/branding')
+    if (!appReady()) {
+        // app does not exist, get the app
+        
+        return;
     }
-    if (!accountReady()) {
-        res.redirect('/setup/account')
+    if (!(await accountReady())) {
+        if (req.path == "/account") {
+            res.sendFile('setup/account.html', { root: __distPath })
+            return;
+        }
+        res.redirect(`/setup/account?setup_key=${req.query['setup_key']}`)
+        return;
     }
     if (!scrapperReady()) {
-        res.redirect('/setup/scrapper')
+        if (req.path == "/scrapper") {
+            res.sendFile('setup/scrapper.html', { root: __distPath })
+            return;
+        }
+        res.redirect(`/setup/scrapper?setup_key=${req.query['setup_key']}`)
+        return;
     }
+    if (!brandingReady()) {
+        if (req.path == "/branding") {
+            res.sendFile('setup/branding.html', { root: __distPath })
+            return;
+        }
+        res.redirect(`/setup/branding?setup_key=${req.query['setup_key']}`)
+        return;
+    }
+    next();
 }
 
-function getBranding() {
-
-}
-
-function getAccount() {
-
-}
-
-function getScrapper() {
-
-}
+router.get('/*', setupHandler);
+router.post('/branding', setupBranding);
+router.post('/account', setupAccount);
+router.post('/scrapper', setupScrapper);
+router.post('/goauth', authorizeGoogle);
 
 async function setupAccount(req, res) {
-    if (accountReady()) {
-        res.redirect('/setup');
-    }
+    console.log("test")
     const account = req.body
     if (!isIAccountForm(account)) {
         throw 'not an account form'
@@ -101,22 +101,29 @@ async function setupAccount(req, res) {
     await accountService.create(account);
     res.sendStatus(200);
 }
+
 async function setupScrapper(req, res) {
-    if (scrapperReady()) {
-        res.redirect('/setup');
-    }
     const address = app.get('address')
     if (address === null || typeof address === 'string') {
         throw 'listener address error'
     }
     app.set('urls', generateAuthUrl(address))
-    
 }
 
+
+async function setupBranding(req, res) {
+    // const address = app.get('address')
+    // if (address === null || typeof address === 'string') {
+    //     throw 'listener address error'
+    // }
+    // app.set('urls', generateAuthUrl(address))
+}
+
+
 async function authorizeGoogle(req, res) {
-    if (isAuthorized()) {
-        res.sendStatus(404);
-    }
+    // if (isAuthorized()) {
+    //     res.sendStatus(404);
+    // }
     const code = req.query['code'];
 
     if (typeof code !== 'string') {
