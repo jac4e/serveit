@@ -1,0 +1,10 @@
+services:
+  database:
+    # TODO: add healthcheck
+    ports:
+      - "27017:27017"
+    image: mongo:6
+    restart: unless-stopped
+    user: "mongodb:mongodb"
+    volumes:
+      - ./mongodata:/data:Z
