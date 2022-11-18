@@ -7,10 +7,11 @@ import accountService from './account/service.js'
 import transactionService from './_helpers/transaction.js';
 import { join, dirname } from 'path';
 import { existsSync, statSync, readdirSync, readFileSync } from 'fs';
-import { app, __distPath } from './index.js';
+import { app, __appPath, __distPath } from './index.js';
 import { authorize, generateAuthUrl, isAuthorized } from './_helpers/email.js';
 import { isIAccountForm, Roles } from 'typesit';
 import { config } from './configuration/config.js';
+import logger from './_helpers/logger.js';
 
 const router = express.Router();
 
@@ -21,7 +22,7 @@ const scrapperReady = () => {
 };
 
 const brandingReady = () => {
-    // return existsSync(join(__distPath, '/assets/branding'))
+    // return existsSync(join(__appPath, '/assets/branding'))
     return true; // currently not implemented
 }
 
@@ -32,8 +33,7 @@ const accountReady = async () => {
 }
 
 const appReady = () => {
-    const app = existsSync(join(__distPath, '/index.html'));
-    // console.log("appready?", config.backend.includeApp ? app : true)
+    const app = existsSync(join(__appPath, '/index.html'));
     return config.backend.includeApp ? app : true;
 }
 

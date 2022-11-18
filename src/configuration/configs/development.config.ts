@@ -12,7 +12,7 @@ export function getDevelopmentConfig(processVariables: ProcessVariables ): Confi
     const backend: BackendConfig = {
         url: processVariables.BACKEND_URL ?? "http://localhost:3000",
         port: parseInt(processVariables.BACKEND_PORT ?? "3000"),
-        includeApp: (processVariables.INCLUDE_APP === "true" ? true : false )?? false,
+        includeApp: processVariables.INCLUDE_APP === "true" ? true : false,
         jwt: processVariables.JWT_SECRET ?? randomBytes(96).toString('hex'),
     }
   return {

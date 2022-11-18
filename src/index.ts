@@ -40,11 +40,6 @@ async function appGuard(req, res, next) {
 
 // connection logger
 app.use((req, res, next) => {
-    // redact sensitive info from logs
-    const headers = {...req.headers}
-    headers.authorization = 'REDACTED'
-    console.log(headers);
-    console.log(req.get('User-Agent'));
     const data =  {
       method: req.method,
       protocol: req.protocol,
@@ -71,7 +66,7 @@ app.use('/api', jwtAuthGuard(), cors(), readyGuard, api);
 
 // app route
 app.get('/', readyGuard, appGuard, (req, res) => {
-  res.sendFile('app/index.html', { root: __appPath })
+  res.sendFile('index.html', { root: __appPath })
 });
 
 // Catch all for files in _appPath
