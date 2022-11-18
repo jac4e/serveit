@@ -1,7 +1,5 @@
 node_modules
-src/config.js
 .DS_Store
-src/deploy/config.js
 dist/
 tsconfig.tsbuildinfo
 
@@ -9,3 +7,4 @@ tsconfig.tsbuildinfo
 credentials.json
 token.json
 failed_messages
+*.log

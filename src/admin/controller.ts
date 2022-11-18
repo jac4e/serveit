@@ -22,7 +22,7 @@ function createTransactions(req, res, next) {
     // Check if body is an ITransactionForm type
     const data = req.body;
     if(!isITransactionForm(data)){
-        console.log(data);
+        // console.log(data);
         throw 'request body is of wrong type, must be ITransactionForm'
     }
     adminService.createTransaction(data).then(() => res.json({})).catch(err => next(err))

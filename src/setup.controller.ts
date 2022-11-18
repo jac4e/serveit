@@ -27,13 +27,13 @@ const brandingReady = () => {
 
 const accountReady = async () => {
     const users = await accountService.getAll()
-    console.log("accountready?", !(users.length < 1))
+    // console.log("accountready?", !(users.length < 1))
     return !(users.length < 1);
 }
 
 const appReady = () => {
     const app = existsSync(join(__distPath, '/index.html'));
-    console.log("appready?", config.backend.includeApp ? app : true)
+    // console.log("appready?", config.backend.includeApp ? app : true)
     return config.backend.includeApp ? app : true;
 }
 
@@ -92,7 +92,7 @@ router.post('/scrapper', setupScrapper);
 router.post('/goauth', authorizeGoogle);
 
 async function setupAccount(req, res) {
-    console.log("test")
+    // console.log("test")
     const account = req.body
     if (!isIAccountForm(account)) {
         throw 'not an account form'

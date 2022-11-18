@@ -1,6 +1,7 @@
 // The MIT License (MIT)
 
 // Copyright (c) 2018 Jason Watmore
+// Copyright (c) 2022 Jacques Fourie
 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -20,9 +21,11 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+import logger from "./logger.js";
+
 export default function errorHandler(err, req, res, next) {
-    // Log error to console
-    console.log(err);
+    // Log error
+    logger.error(err)
     
     if (typeof (err) === 'string') {
         // custom application error

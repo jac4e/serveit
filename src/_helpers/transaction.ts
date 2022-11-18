@@ -1,6 +1,7 @@
 import db from './db.js';
 import accountService from '../account/service.js';
 import { ITransaction, IAccount, IProduct, ITransactionDocument, ITransactionForm, ITransactionItem, TransactionType } from 'typesit';
+import logger from './logger.js';
 
 const Transaction = db.transaction;
 
@@ -20,6 +21,7 @@ async function create(transactionParam: ITransactionForm): Promise<void> {
 
     transaction.set(transactionParam);
     await transaction.save()
+    logger.transaction(transaction.toJSON())
 }
 
 async function getAll(): Promise<ITransaction[]> {

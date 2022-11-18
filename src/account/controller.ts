@@ -68,7 +68,7 @@ function register(req, res, next) {
     // Check if body is an IAccountForm type
     const data = req.body;
     if(!isIAccountForm(data)){
-        console.log(data);
+        // console.log(data);
         throw 'request body is of wrong type, must be IAccountForm'
     }
 

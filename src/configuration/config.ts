@@ -1,6 +1,7 @@
 import { Config, Environment, ProcessVariables, ProcessVariablesDefined } from "./config.type";
 import { getProductionConfig } from "./configs/production.config.js";
 import { getDevelopmentConfig } from "./configs/development.config.js";
+import logger from "../_helpers/logger.js";
 
 export const config = getConfig(process.env as unknown as ProcessVariables);
 
@@ -8,13 +9,13 @@ export function getConfig(processVariables: ProcessVariables): Config {
     const environment: Environment = processVariables.NODE_ENV as Environment;
     switch (environment) {
         case "production":
-            console.log('Loading production configuration')
+            logger.info('Loading production configuration')
             return getProductionConfig(processVariables);
         case "development":
-            console.log('Loading development configuration')
+            logger.info('Loading development configuration')
             return getDevelopmentConfig(processVariables);
         default:
-            console.log('Loading development configuration')
+            logger.info('Loading development configuration')
             return getDevelopmentConfig(processVariables);
     }
 }

@@ -27,9 +27,9 @@ function getProducts(req, res, next) {
 function createProduct(req, res, next) {
     // Check if body is an IProductForm type
     const data = req.body;
-    console.log(data)
+    // console.log(data)
     if(!isIProductForm(data)){
-        console.log(data)
+        // console.log(data)
         throw 'request body is of wrong type, must be IProductForm'
     }
     storeService.createProduct(data)

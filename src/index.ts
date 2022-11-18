@@ -11,6 +11,9 @@ import { randomUUID } from 'crypto'
 import cors from 'cors';
 import jwtAuthGuard from './_helpers/jwt.js';
 import bodyParser from 'body-parser';
+import logger from './_helpers/logger.js';
+
+logger.info('Starting serveit');
 
 export const __distPath = dirname(fileURLToPath(import.meta.url));
 export const __appPath = join(__distPath, '../app');
@@ -34,6 +37,25 @@ async function appGuard(req, res, next) {
   }
   next();
 }
+
+// connection logger
+app.use((req, res, next) => {
+    // redact sensitive info from logs
+    const headers = {...req.headers}
+    headers.authorization = 'REDACTED'
+    console.log(headers);
+    console.log(req.get('User-Agent'));
+    const data =  {
+      method: req.method,
+      protocol: req.protocol,
+      endpoint: req.originalUrl,
+      host: req.get('Host'),
+      origin: req.get('Origin'),
+      userAgent: req.get('User-Agent'),
+    }
+    logger.connection(data);
+    next();
+})
 
 // body parser
 app.use(bodyParser.urlencoded({
@@ -80,9 +102,9 @@ app.use(errorHandler);
 app.set('port', config.backend.port);
 app.set('setup_key', randomUUID());
 const listener = app.listen(config.backend.port, async () => {
-  console.log('Listening on port ' + app.get('port'))
+  logger.info('Listening on ' + app.get('port'))
   if (await shouldSetup()){
-    console.log('Setup required, please use ' + config.backend.url + '/setup?setup_key=' + app.get('setup_key'))
+    logger.info('Setup required, please use ' + config.backend.url + '/setup?setup_key=' + app.get('setup_key'))
   }
   app.set('address', listener.address())
 });
