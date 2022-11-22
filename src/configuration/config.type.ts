@@ -21,34 +21,48 @@ export interface Config {
     environment: Environment;
     database: DatabaseConfig;
     backend: BackendConfig;
+    ssl: SSLConfig;
     //   frontend?: FrontendConfig;
-    //   logLevel: Level;
 }
 
 export interface ProcessVariables {
-    NODE_ENV: string;
+    SELFSIGN?: string;
+    CF_TOKEN?: string;
+    // MAINTAINER?: string;
+    NODE_ENV?: string;
     DB_URL?: string;
     INCLUDE_APP?: string;
     DB_PORT?: string;
     DB_USER?: string;
     DB_PASS?: string;
-    BACKEND_URL?: string;
+    BACKEND_DOMAIN?: string;
     BACKEND_PORT?: string;
-    JWT_SECRET?: string;
     //   frontend?: FrontendConfig;
     //   logLevel: Level;
 }
 
 export interface ProcessVariablesDefined {
+    SELFSIGN: string;
+    CF_TOKEN: string;
+    // MAINTAINER: string;
     NODE_ENV: string;
     DB_URL: string;
     DB_PORT: string;
     DB_USER: string;
     INCLUDE_APP: string;
     DB_PASS: string;
-    BACKEND_URL: string;
+    BACKEND_DOMAIN: string;
     BACKEND_PORT: string;
-    JWT_SECRET: string;
     //   frontend?: FrontendConfig;
     //   logLevel: Level;
+}
+
+export interface SSLConfig {
+    selfSign: boolean,
+    path: string,
+    subject: string,
+    altnames: string[],
+    cloudflare: {
+        token: string
+    }
 }

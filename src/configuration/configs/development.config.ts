@@ -1,5 +1,7 @@
-import { BackendConfig, Config, DatabaseConfig, ProcessVariables } from "../config.type";
+import { BackendConfig, Config, DatabaseConfig, ProcessVariables, ProcessVariablesDefined, SSLConfig } from "../config.type";
 import { randomBytes } from 'crypto';
+import { join } from 'path'
+import { __savePath } from "../../_helpers/globals.js";
 
 export function getDevelopmentConfig(processVariables: ProcessVariables ): Config {
     const database: DatabaseConfig = {
@@ -10,14 +12,25 @@ export function getDevelopmentConfig(processVariables: ProcessVariables ): Confi
         name: "spendit-dev-db",
     }
     const backend: BackendConfig = {
-        url: processVariables.BACKEND_URL ?? "http://localhost:3000",
-        port: parseInt(processVariables.BACKEND_PORT ?? "3000"),
-        includeApp: processVariables.INCLUDE_APP === "true" ? true : false,
-        jwt: processVariables.JWT_SECRET ?? randomBytes(96).toString('hex'),
+        port: parseInt(processVariables.BACKEND_PORT ?? "3443"),
+        url: `https://${processVariables.BACKEND_DOMAIN}:${parseInt(processVariables.BACKEND_PORT ?? "3000")}` ?? "https://localhost:3000",
+        includeApp: processVariables.INCLUDE_APP === "true" ? true : true,
+        jwt: randomBytes(96).toString('hex'),
+    }
+    const ssl: SSLConfig = {
+      selfSign: processVariables.SELFSIGN === "false" ? false : true,
+      // maintainer: processVariables.MAINTAINER ?? "admin@localhost",
+      path: join(__savePath, "certs/"),
+      subject: processVariables.BACKEND_DOMAIN ?? "localhost",
+      altnames: [processVariables.BACKEND_DOMAIN ?? "localhost"],
+      cloudflare: {
+          token: processVariables.CF_TOKEN ?? ""
+      }
     }
   return {
     environment: "development",
     database: database,
     backend: backend,
+    ssl: ssl
   };
 }

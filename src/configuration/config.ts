@@ -10,6 +10,9 @@ export function getConfig(processVariables: ProcessVariables): Config {
     switch (environment) {
         case "production":
             logger.info('Loading production configuration')
+            if (!defineProcessVariables(processVariables)){
+                return {} as Config;
+            }
             return getProductionConfig(processVariables);
         case "development":
             logger.info('Loading development configuration')
@@ -20,34 +23,41 @@ export function getConfig(processVariables: ProcessVariables): Config {
     }
 }
 
-export function isDatabaseConfigGood(processVariables: ProcessVariables): processVariables is ProcessVariablesDefined {
-    if (processVariables.DB_URL === undefined) {
-        return false;
+export function defineProcessVariables(processVariables: ProcessVariables): processVariables is ProcessVariablesDefined {
+    if(processVariables.SELFSIGN === undefined) {
+        throw "Environment variable SELFSIGN must be defined";
     }
-    if (processVariables.DB_PORT === undefined) {
-        return false;
+    if(processVariables.CF_TOKEN === undefined) {
+        throw "Environment variable CF_TOKEN must be defined";
     }
-    if (processVariables.DB_USER === undefined) {
-        return false;
+    // if(processVariables.MAINTAINER === undefined) {
+    //     throw "Environment variable MAINTAINER must be defined";
+    // }
+    if(processVariables.NODE_ENV === undefined) {
+        throw "Environment variable NODE_ENV must be defined";
     }
-    if (processVariables.DB_PASS === undefined) {
-        return false;
+    if(processVariables.DB_URL === undefined) {
+        throw "Environment variable DB_URL must be defined";
+    }
+    if(processVariables.DB_PORT === undefined) {
+        throw "Environment variable DB_PORT must be defined";
+    }
+    if(processVariables.DB_USER === undefined) {
+        throw "Environment variable DB_USER must be defined";
+    }
+    if(processVariables.INCLUDE_APP === undefined) {
+        throw "Environment variable INCLUDE_APP must be defined";
+    }
+    if(processVariables.DB_PASS === undefined) {
+        throw "Environment variable DB_PASS must be defined";
+    }
+    if(processVariables.BACKEND_DOMAIN === undefined) {
+        throw "Environment variable BACKEND_URL must be defined";
+    }
+    if(processVariables.BACKEND_PORT === undefined) {
+        throw "Environment variable BACKEND_PORT must be defined";
     }
     return true
-}
-
-export function isBackendConfigGood(processVariables: ProcessVariables) {
-    if (processVariables.BACKEND_URL === undefined) {
-        return false;
-    }
-    if (processVariables.BACKEND_PORT === undefined) {
-        return false;
-    }
-    if (processVariables.JWT_SECRET === undefined) {
-        return false;
-    }
-    return true
-
 }
 
 export function saveConfig(config: Config) {

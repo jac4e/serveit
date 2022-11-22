@@ -12,11 +12,10 @@ import cors from 'cors';
 import jwtAuthGuard from './_helpers/jwt.js';
 import bodyParser from 'body-parser';
 import logger from './_helpers/logger.js';
+import { __appPath } from './_helpers/globals.js';
+import ssl from './_helpers/ssl.js'
 
 logger.info('Starting serveit');
-
-export const __distPath = dirname(fileURLToPath(import.meta.url));
-export const __appPath = join(__distPath, '../app');
 
 export const app = express();
 

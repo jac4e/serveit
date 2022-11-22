@@ -7,7 +7,8 @@ import accountService from './account/service.js'
 import transactionService from './_helpers/transaction.js';
 import { join, dirname } from 'path';
 import { existsSync, statSync, readdirSync, readFileSync } from 'fs';
-import { app, __appPath, __distPath } from './index.js';
+import { app } from './index.js';
+import { __appPath, __distPath} from './_helpers/globals.js'
 import { authorize, generateAuthUrl, isAuthorized } from './_helpers/email.js';
 import { isIAccountForm, Roles } from 'typesit';
 import { config } from './configuration/config.js';

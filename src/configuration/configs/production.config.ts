@@ -1,13 +1,9 @@
-import { isBackendConfigGood, isDatabaseConfigGood } from "../config.js";
-import { BackendConfig, Config, DatabaseConfig, ProcessVariables } from "../config.type";
+import { __savePath } from "../../_helpers/globals.js";
+import {join} from 'path';
+import {randomBytes} from 'crypto';
+import { BackendConfig, Config, DatabaseConfig, ProcessVariables, ProcessVariablesDefined, SSLConfig } from "../config.type";
 
-export function getProductionConfig(processVariables: ProcessVariables): Config {
-    if (!isDatabaseConfigGood(processVariables)) {
-        throw 'Database configuration not completed, please set the appropriate environment variables'
-    }
-    if (!isBackendConfigGood(processVariables)) {
-        throw 'Backend configuration not completed, please set the appropriate environment variables'
-    }
+export function getProductionConfig(processVariables: ProcessVariablesDefined): Config {
     const database: DatabaseConfig = {
         url: processVariables.DB_URL,
         port: processVariables.DB_PORT,
@@ -16,14 +12,26 @@ export function getProductionConfig(processVariables: ProcessVariables): Config 
         name: "spendit-db",
     }
     const backend: BackendConfig = {
-        url: processVariables.BACKEND_URL,
+        url: `https://${processVariables.BACKEND_DOMAIN}:${parseInt(processVariables.BACKEND_PORT)}`,
         includeApp: processVariables.INCLUDE_APP === "true" ? true : false,
         port: parseInt(processVariables.BACKEND_PORT),
-        jwt: processVariables.JWT_SECRET,
+        jwt: randomBytes(96).toString('hex'),
     }
+    
+    const ssl: SSLConfig = {
+        selfSign: false,
+        // maintainer: processVariables.MAINTAINER,
+        path: join(__savePath, "certs/"),
+        subject: processVariables.BACKEND_DOMAIN,
+        altnames: [processVariables.BACKEND_DOMAIN],
+        cloudflare: {
+            token: processVariables.CF_TOKEN
+        }
+      }
   return {
     environment: "production",
     database: database,
-    backend: backend
+    backend: backend,
+    ssl: ssl
   };
 }

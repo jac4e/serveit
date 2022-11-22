@@ -1,0 +1,29 @@
+{
+    "compilerOptions": {
+        /* Docs: https://www.typescriptlang.org/tsconfig */ "target": "es2020",
+        "module": "es2020",
+        "strict": true,
+        "noImplicitAny": false,
+        "strictNullChecks": true,
+        "checkJs": false,
+        "allowJs": false,
+        "moduleResolution": "node",
+        "types": ["node"],
+        "lib": ["es7"],
+        "esModuleInterop": true,
+        "resolveJsonModule": true,
+        "skipLibCheck": true,
+        "forceConsistentCasingInFileNames": true,
+        "noImplicitOverride": true,
+        "sourceMap": true,
+        "allowUnreachableCode": true,
+        "useUnknownInCatchVariables": false, // TypeScript 4.4+ only!
+        "rootDir": ".",
+        "outDir": "../dist/",
+    },
+    "references": [      // this is how we declare a dependency from
+      { "path": "../" }  // this project to the one at the root dir`
+    ],
+    "exclude": ["../node_modules", "<node_internals>/**"]
+  }
+  
