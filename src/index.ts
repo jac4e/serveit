@@ -12,10 +12,15 @@ import cors from 'cors';
 import jwtAuthGuard from './_helpers/jwt.js';
 import bodyParser from 'body-parser';
 import logger from './_helpers/logger.js';
+import https from 'https';
+import http from 'http';
 import { __appPath } from './_helpers/globals.js';
-import ssl from './_helpers/ssl.js'
+import ssl from './_helpers/ssl.js';
 
 logger.info('Starting serveit');
+
+// Check that ssl cert and key are defined
+ssl.exists()
 
 export const app = express();
 
@@ -23,6 +28,7 @@ export const app = express();
 async function readyGuard(req, res, next) {
   if (await shouldSetup()) {
     res.sendStatus(503);
+    logger.warning('readyGuard 503 status' + await shouldSetup())
     return;
   }
   next();
@@ -31,6 +37,7 @@ async function readyGuard(req, res, next) {
 // Guards accessing app when config states no app included
 async function appGuard(req, res, next) {
   if (!config.backend.includeApp) {
+    logger.warning('appGuard 503 status' + config.backend.includeApp)
     res.sendStatus(503);
     return;
   }
@@ -71,6 +78,7 @@ app.get('/', readyGuard, appGuard, (req, res) => {
 // Catch all for files in _appPath
 app.get('/*', readyGuard, appGuard, (req, res) => {
   const filePath = join(__appPath, req.path);
+  logger.debug(`catch all ${filePath} ${req.path}`)
   // If the path does not exist, redirect to main app since it could be one of its routes
   if (!existsSync(filePath)) {
     res.sendFile('index.html', { root: __appPath })
@@ -95,10 +103,16 @@ app.use(errorHandler);
 // start server
 app.set('port', config.backend.port);
 app.set('setup_key', randomUUID());
-const listener = app.listen(config.backend.port, async () => {
+// const listener = app.listen(config.backend.port, );
+
+var httpServer = http.createServer(app);
+var httpsServer = https.createServer({key: ssl.key, cert: ssl.cert}, app);
+
+httpServer.listen(8080);
+const httpsListener = httpsServer.listen(config.backend.port, async () => {
   logger.info('Listening on ' + app.get('port'))
   if (await shouldSetup()){
     logger.info('Setup required, please use ' + config.backend.url + '/setup?setup_key=' + app.get('setup_key'))
   }
-  app.set('address', listener.address())
+  app.set('address', httpsListener.address())
 });
