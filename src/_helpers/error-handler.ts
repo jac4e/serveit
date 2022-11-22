@@ -26,6 +26,7 @@ import logger from "./logger.js";
 export default function errorHandler(err, req, res, next) {
     // Log error
     logger.error(err)
+    console.log(err)
     
     if (typeof (err) === 'string') {
         // custom application error
@@ -33,5 +34,5 @@ export default function errorHandler(err, req, res, next) {
     }
 
     // default to 500 server error
-    return res.status(500).json({ message: err.message });
+    return res.status(err.status).json({ message: err.message });
 }
