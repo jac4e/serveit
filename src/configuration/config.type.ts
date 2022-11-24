@@ -28,7 +28,6 @@ export interface Config {
 export interface ProcessVariables {
     SELFSIGN?: string;
     CF_TOKEN?: string;
-    // MAINTAINER?: string;
     NODE_ENV?: string;
     DB_URL?: string;
     INCLUDE_APP?: string;
@@ -37,14 +36,11 @@ export interface ProcessVariables {
     DB_PASS?: string;
     BACKEND_DOMAIN?: string;
     BACKEND_PORT?: string;
-    //   frontend?: FrontendConfig;
-    //   logLevel: Level;
 }
 
 export interface ProcessVariablesDefined {
     SELFSIGN: string;
     CF_TOKEN: string;
-    // MAINTAINER: string;
     NODE_ENV: string;
     DB_URL: string;
     DB_PORT: string;
@@ -53,8 +49,6 @@ export interface ProcessVariablesDefined {
     DB_PASS: string;
     BACKEND_DOMAIN: string;
     BACKEND_PORT: string;
-    //   frontend?: FrontendConfig;
-    //   logLevel: Level;
 }
 
 export interface SSLConfig {

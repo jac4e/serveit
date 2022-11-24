@@ -1,3 +1,6 @@
+// This configuration is only for things required for serveit to actually start
+// Things like SSL, database, etc.
+
 import { Config, Environment, ProcessVariables, ProcessVariablesDefined } from "./config.type";
 import { getProductionConfig } from "./configs/production.config.js";
 import { getDevelopmentConfig } from "./configs/development.config.js";

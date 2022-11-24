@@ -9,6 +9,7 @@ const schema = new mongoose.Schema<IAccountDocument, Model<IAccountDocument>>({
     email: { type: String, trim: true, required: true },
     hash: { type: String, trim: true, required: true },
     sessionid: { type: String, trim: true, unique: true, required: true },
+    notify: { type: Boolean, default: false },
     gid: {
         type: String,
         index: {

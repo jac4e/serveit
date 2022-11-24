@@ -13,7 +13,7 @@ export function getDevelopmentConfig(processVariables: ProcessVariables ): Confi
     }
     const backend: BackendConfig = {
         port: parseInt(processVariables.BACKEND_PORT ?? "3443"),
-        url: `https://${processVariables.BACKEND_DOMAIN}:${parseInt(processVariables.BACKEND_PORT ?? "3000")}` ?? "https://localhost:3000",
+        url: `https://${processVariables.BACKEND_DOMAIN ?? "localhost"}:${parseInt(processVariables.BACKEND_PORT ?? "3443")}`,
         includeApp: processVariables.INCLUDE_APP === "true" ? true : true,
         jwt: randomBytes(96).toString('hex'),
     }

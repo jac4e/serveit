@@ -1,3 +1,5 @@
+// Setup is for configuration that is required for the spendit, but not required to start serveit
+
 import express, { Request } from 'express';
 import accounts from './account/controller.js';
 import admin from './admin/controller.js';
@@ -6,10 +8,10 @@ import jwtAuthGuard from './_helpers/jwt.js';
 import accountService from './account/service.js'
 import transactionService from './_helpers/transaction.js';
 import { join, dirname } from 'path';
-import { existsSync, statSync, readdirSync, readFileSync } from 'fs';
+import { existsSync, statSync, readdirSync, writeFileSync } from 'fs';
 import { app } from './index.js';
-import { __appPath, __distPath} from './_helpers/globals.js'
-import { authorize, generateAuthUrl, isAuthorized } from './_helpers/email.js';
+import { __appPath, __configPath, __distPath, __savePath} from './_helpers/globals.js'
+import { authorize, generateAuthUrl, isAuthorized } from './_helpers/scrapper.js';
 import { isIAccountForm, Roles } from 'typesit';
 import { config } from './configuration/config.js';
 import logger from './_helpers/logger.js';
@@ -22,12 +24,16 @@ const scrapperReady = () => {
     return true; // currently not implemented
 };
 
+const smtpReady = () => {
+    return existsSync(join(__configPath, 'smtp.json'))
+};
+
 const brandingReady = () => {
     // return existsSync(join(__appPath, '/assets/branding'))
     return true; // currently not implemented
 }
 
-const accountReady = async () => {
+const adminReady = async () => {
     const users = await accountService.getAll()
     // console.log("accountready?", !(users.length < 1))
     return !(users.length < 1);
@@ -39,7 +45,15 @@ const appReady = () => {
 }
 
 export const shouldSetup = async () => {
-    return !(appReady() && scrapperReady() && (await accountReady()) && brandingReady())
+    return !(appReady() && scrapperReady() && (await adminReady()) && brandingReady() && smtpReady())
+}
+
+function setupRoute(name, req, res) {
+    if (req.path == `/${name}`) {
+        res.sendFile(`setup/${name}.html`, { root: __distPath })
+        return;
+    }
+    res.redirect(`/setup/${name}?setup_key=${req.query['setup_key']}`)
 }
 
 async function setupHandler(req, res, next) {
@@ -49,7 +63,7 @@ async function setupHandler(req, res, next) {
         return;
     }
 
-    // Routing
+    // Check if we should actually setup
     if (!await shouldSetup()) {
         res.redirect('/');
         return;
@@ -59,36 +73,32 @@ async function setupHandler(req, res, next) {
         
         return;
     }
-    if (!(await accountReady())) {
-        if (req.path == "/account") {
-            res.sendFile('setup/account.html', { root: __distPath })
-            return;
-        }
-        res.redirect(`/setup/account?setup_key=${req.query['setup_key']}`)
+    
+    // Routing
+    if (!(await adminReady())){
+        setupRoute('account', req, res);
         return;
     }
-    if (!scrapperReady()) {
-        if (req.path == "/scrapper") {
-            res.sendFile('setup/scrapper.html', { root: __distPath })
-            return;
-        }
-        res.redirect(`/setup/scrapper?setup_key=${req.query['setup_key']}`)
+    if (!smtpReady()){
+        setupRoute('smtp', req, res);
         return;
     }
-    if (!brandingReady()) {
-        if (req.path == "/branding") {
-            res.sendFile('setup/branding.html', { root: __distPath })
-            return;
-        }
-        res.redirect(`/setup/branding?setup_key=${req.query['setup_key']}`)
+    if (!scrapperReady()){
+        setupRoute('scrapper', req, res);
         return;
     }
-    next();
+    if (!brandingReady()){
+        setupRoute('branding', req, res);
+        return;
+    }
+
+    next()
 }
 
 router.get('/*', setupHandler);
 router.post('/branding', setupBranding);
 router.post('/account', setupAccount);
+router.post('/smtp', setupSmtp);
 router.post('/scrapper', setupScrapper);
 router.post('/goauth', authorizeGoogle);
 
@@ -118,6 +128,19 @@ async function setupBranding(req, res) {
     //     throw 'listener address error'
     // }
     // app.set('urls', generateAuthUrl(address))
+}
+async function setupSmtp(req, res) {
+    const smtpConfig = {
+            host: req.body.host,
+            port: req.body.port,
+            secure: req.body.secure === "on",
+            auth: {
+                user: req.body.user,
+                pass: req.body.password
+            }
+    }
+    writeFileSync(join(__configPath, 'smtp.json'), JSON.stringify(req.body))
+    res.sendStatus(200);
 }
 
 
