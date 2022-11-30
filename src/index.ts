@@ -27,11 +27,11 @@ export const app = express();
 // Guards services from being accessed too soon
 async function readyGuard(req, res, next) {
   if (await shouldSetup()) {
-    res.sendStatus(503);
     logger.warning('readyGuard 503 status' + await shouldSetup())
+    res.sendStatus(503);
     return;
   }
-  next();
+  return next();
 }
 
 // Guards accessing app when config states no app included
@@ -41,7 +41,7 @@ async function appGuard(req, res, next) {
     res.sendStatus(503);
     return;
   }
-  next();
+  return next();
 }
 
 // connection logger
@@ -79,7 +79,7 @@ app.get('/', readyGuard, appGuard, (req, res) => {
 app.get('/*', readyGuard, appGuard, (req, res) => {
   const filePath = join(__appPath, req.path);
   logger.debug(`catch all ${filePath} ${req.path}`)
-  // If the path does not exist, redirect to main app since it could be one of its routes
+  // If the path does not exist, send the main app since it could be one of its routes
   if (!existsSync(filePath)) {
     res.sendFile('index.html', { root: __appPath })
     return;
@@ -114,5 +114,4 @@ const httpsListener = httpsServer.listen(config.backend.port, async () => {
   if (await shouldSetup()){
     logger.info('Setup required, please use ' + config.backend.url + '/setup?setup_key=' + app.get('setup_key'))
   }
-  app.set('address', httpsListener.address())
 });
