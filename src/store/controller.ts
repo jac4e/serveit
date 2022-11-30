@@ -11,7 +11,7 @@ const guard = Guard({
 
 // Routes
 router.get('/products', getProducts)
-router.post('/purchase', guard.check([Roles.Member, Roles.NonMember]), purchase)
+router.post('/purchase', guard.check([[Roles.Member], [Roles.NonMember]]), purchase)
 
 router.post('/products', createProduct)
 router.put('/products/:productId', guard.check(Roles.Admin), updateProductById)
