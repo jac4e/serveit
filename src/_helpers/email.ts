@@ -26,7 +26,7 @@ class Email {
           });
     }
 
-    async sendAll(targetRole: Roles, subject, body){
+    async sendAll(targetRole: Roles, subject: string, message: string){
         const accounts = await accountService.getAll()
         const emails = accounts.map(({role, email}) => {
             if (targetRole === role) {
@@ -36,19 +36,17 @@ class Email {
         return await this.transporter.sendMail({
           from: `<${this.config.auth.user}>`, // sender address
           bcc: emails, // list of receivers
-          subject: "Hello ✔", // Subject line
-          text: "Hello world?", // plain text body
-          html: "<b>Hello world?</b>", // html body
+          subject: subject, // Subject line
+          text: message, // plain text body
         });
     }
 
-    async sendOne(account: IAccount){
+    async send(account: IAccount, subject: string, message: string){
         return await this.transporter.sendMail({
-          from: `"${this.config.senderName}" <${this.config.senderEmail}>`, // sender address
+          from: `<${this.config.auth.user}>`, // sender address
           to: account.email, // list of receivers
-          subject: "Hello ✔", // Subject line
-          text: "Hello world?", // plain text body
-          html: "<b>Hello world?</b>", // html body
+          subject: subject, // Subject line
+          text: message, // plain text body
         });
     }
 }
