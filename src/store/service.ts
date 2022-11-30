@@ -3,7 +3,8 @@ import { JwtPayload } from 'jsonwebtoken';
 import {config} from '../configuration/config.js';
 import transactionService from '../_helpers/transaction.js';
 import accountService from '../account/service.js';
-import { ICartItem, ICartItemSerialized, ICartSerialized, IProduct, IProductDocument, IProductForm, ITransactionForm, ITransactionItem, TransactionType } from 'typesit';
+import { ICartItem, ICartItemSerialized, ICartSerialized, IProduct, IProductDocument, IProductForm, ITransactionForm, ITransactionItem, Roles, TransactionType } from 'typesit';
+import email from '../_helpers/email.js';
 
 const Product = db.product;
 
@@ -109,6 +110,10 @@ async function purchaseCart(payload: JwtPayload, cartSerialized: ICartSerialized
     // transaction has complete, can now reduce stock levels
     for (let index = 0; index < cart.length; index++) {
         products[index].stock = (BigInt(products[index].stock) - BigInt(cart[index].amount)).toString();
+        // Notify admin if stock has been reduced to zero
+        const subject = `Spendit - ${products[index].name} is Out of Stock`;
+        const message = `Hi Admins,\nThe last ${products[index].name} has just been purchased.`
+        email.sendAll(Roles.Admin, subject, message)
         products[index].save();
     }
 }

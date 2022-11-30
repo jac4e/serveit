@@ -2,6 +2,7 @@ import db from './db.js';
 import accountService from '../account/service.js';
 import { ITransaction, IAccount, IProduct, ITransactionDocument, ITransactionForm, ITransactionItem, TransactionType } from 'typesit';
 import logger from './logger.js';
+import email from './email.js';
 
 const Transaction = db.transaction;
 
@@ -22,6 +23,21 @@ async function create(transactionParam: ITransactionForm): Promise<void> {
     transaction.set(transactionParam);
     await transaction.save()
     logger.transaction(transaction.toJSON())
+
+    // Notify account of transaction
+    // Temporary text based
+    const subject = `Spendit - Transaction Receipt`;
+    // Date
+    // Transaction ID
+    // Account ID
+    // Type
+    // Reason
+    // Products (table)
+    // Total
+    const productsList = transaction.products.map(item => `\t${item.name}\t${item.description ?? 'N/A'}\t${item.amount}\t${item.price}\t${item.total}`).join('\n')
+    const productTable = `\tName\tDescription\tQuantity\tUnit Price\tAmount\n${productsList}\n\tTotal:${transaction.total}`
+    const message = `Date: ${transaction.date}\nTransaction ID: ${transaction.id}\nAccount ID: ${transaction.accountid}\nType: ${transaction.type}\nReason: ${transaction.reason}\nProducts:\n${productTable}`
+    email.send(account, subject, message)
 }
 
 async function getAll(): Promise<ITransaction[]> {

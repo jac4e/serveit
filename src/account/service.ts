@@ -8,6 +8,7 @@ import { zxcvbn, zxcvbnOptions } from '@zxcvbn-ts/core'
 import zxcvbnCommonPackage from '@zxcvbn-ts/language-common';
 import zxcvbnEnPackage from '@zxcvbn-ts/language-en';
 import { ITransaction, IAccountDocument, IAccountForm, IAccount, ICredentials, Roles } from 'typesit';
+import email from '../_helpers/email.js';
 
 
 const zxcvbnBaseSettings = {
@@ -130,6 +131,11 @@ async function create(accountParam: IAccountForm): Promise<void> {
 
   // save account
   await account.save();
+
+  // Notify
+  const subject = `Spendit - Account Registration Successful`;
+  const message = `Hi ${account.firstName},\nYour spendit account has been successfully created!\n${account.role === Roles.Unverified ? 'Note, your account is currently unverified so you will be unable to use spendit until an admin verifies your account. If your account has not been verified in 24 hours, please email epclub@ualberta.ca or reach out to an executive on discord.' : 'Your account is already verified so you can begin using the store at anytime.'}`
+  email.send(account.toObject(), subject, message)
 }
 
 // async function search({
@@ -208,6 +214,11 @@ async function verify(id: string, role: Roles): Promise<void> {
   }
   account.role = role;
   account.save();
+
+  // Notify user
+  const subject = `Spendit - Account Verified`;
+  const message = `Hi ${account.firstName},\nYour spendit account has been verified as a ${account.role}!`
+  email.send(account.toObject(), subject, message)
 }
 
 async function pay(amount: bigint, id: string): Promise<void> {
@@ -222,16 +233,33 @@ async function pay(amount: bigint, id: string): Promise<void> {
 }
 
 async function updateAccountById(id: string, accountParam: IAccountForm) {
+
   let account = await Account.findById<IAccountDocument>(id)
   if (account === null) {
       throw `Account '${id}' does not exist`;
   }
+
+  // Notify user first, in case email is changed
+  const subject = `Spendit - Account Information Changed`;
+  const message = `Hi ${account.firstName},\nYour spendit account with the ID of ${account.id} has been modified. If this was not initiated by you, please reach out to an admin as soon as possible.`
+  email.send(account.toObject(), subject, message)
+
   account.set(accountParam);
   account.save()
 }
 
 async function deleteAccountById(id: IAccount['id']): Promise<void> {
+    const account = await Account.findById<IAccountDocument>(id);
+    if (account === null) {
+        throw `Account '${id}' does not exist`;
+    }
+
     await Account.deleteOne({_id: id})
+
+    // Notify user
+    const subject = `Spendit - Account Deleted`;
+    const message = `Hi ${account.firstName},\nYour spendit account with the ID of ${account.id} has been deleted. If this was not initiated by you, please reach out to an admin as soon as possible.`
+    email.send(account.toObject(), subject, message)
 }
 
 export default {
