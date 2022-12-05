@@ -5,10 +5,10 @@
   "description": "",
   "main": "dist/index.js",
   "scripts": {
-    "build": "npx tsc && npm run prepare",
+    "build": "npx tsc -b src && npm run prepare",
     "prepare": "copyfiles -u 1 src/**/*.html dist/",
     "start": "node dist/index.js --enable-source-maps",
-    "watch": "CI=1 source .env && npx env-cmd npx tsc-watch --build src --onCompilationComplete 'npm run prepare' --onSuccess 'npm run start'"
+    "watch": "npx env-cmd npx tsc-watch --build src --onCompilationComplete 'npm run prepare' --onSuccess 'npm run start'"
   },
   "keywords": [],
   "author": "jacques@fourie.ca",
