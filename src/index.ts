@@ -27,7 +27,7 @@ export const app = express();
 // Guards services from being accessed too soon
 async function readyGuard(req, res, next) {
   if (await shouldSetup()) {
-    logger.warning('readyGuard 503 status' + await shouldSetup())
+    logger.warning(`readyGuard 503 status ${await shouldSetup()}`)
     res.sendStatus(503);
     return;
   }
@@ -37,7 +37,7 @@ async function readyGuard(req, res, next) {
 // Guards accessing app when config states no app included
 async function appGuard(req, res, next) {
   if (!config.backend.includeApp) {
-    logger.warning('appGuard 503 status' + config.backend.includeApp)
+    logger.warning(`appGuard 503 status ${config.backend.includeApp}`)
     res.sendStatus(503);
     return;
   }
