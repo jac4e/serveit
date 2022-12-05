@@ -27,11 +27,10 @@ jobs:
         cache: 'npm'
     - run: npm i
     - run: npm run build
-    # Get everything ready
     - run: rm -rf node_modules
     - run: rm -f package-lock.json
     - run: zip -r backend.zip .
     - name: Release
       uses: ncipollo/release-action@v1
       with:
-        artifacts: ["backend.zip"]
+        artifacts: "backend.zip"
