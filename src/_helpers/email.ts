@@ -16,7 +16,8 @@ class Email {
             secureConnection: true,
             tls: {
                  ciphers:"SSLv3",
-             }, debug: true, logger: true });
+             }
+          });
         this.transporter.verify(function (error, success) {
             if (error) {
               logger.error(error);
@@ -52,6 +53,5 @@ class Email {
 }
 
 const config = JSON.parse(readFileSync(join(__configPath, 'smtp.json'), 'utf-8'))
-console.log(config)
 const email = new Email(config)
 export default email
