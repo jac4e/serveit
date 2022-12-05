@@ -4,7 +4,7 @@ import { config } from '../configuration/config.js';
 import logger from './logger.js';
 import { chown, readFileSync, mkdirSync, existsSync, writeFileSync } from 'fs'
 import { join } from 'path';
-import { __projectPath, __distPath, __pkg, __savePath } from './globals.js';
+import { __projectPath, __backendPath, __pkg, __savePath } from './globals.js';
 import { X509Certificate }  from 'crypto';
 import selfsigned from 'selfsigned';
 

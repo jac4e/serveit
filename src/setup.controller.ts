@@ -10,7 +10,7 @@ import transactionService from './_helpers/transaction.js';
 import { join, dirname } from 'path';
 import { existsSync, statSync, readdirSync, writeFileSync } from 'fs';
 import { app } from './index.js';
-import { __appPath, __configPath, __distPath, __savePath} from './_helpers/globals.js'
+import { __frontendPath, __configPath, __backendPath, __savePath} from './_helpers/globals.js'
 import { authorize, generateAuthUrl, isAuthorized } from './_helpers/scrapper.js';
 import { isIAccountForm, Roles } from 'typesit';
 import { config } from './configuration/config.js';
@@ -40,7 +40,7 @@ const adminReady = async () => {
 }
 
 const appReady = () => {
-    const app = existsSync(join(__appPath, '/index.html'));
+    const app = existsSync(join(__frontendPath, '/index.html'));
     return config.backend.includeApp ? app : true;
 }
 
@@ -50,7 +50,7 @@ export const shouldSetup = async () => {
 
 function setupRoute(name, req, res) {
     if (req.path == `/${name}`) {
-        res.sendFile(`setup/${name}.html`, { root: __distPath })
+        res.sendFile(`setup/${name}.html`, { root: __backendPath })
         return;
     }
     res.redirect(`/setup/${name}?setup_key=${req.query['setup_key']}`)

@@ -14,7 +14,7 @@ import bodyParser from 'body-parser';
 import logger from './_helpers/logger.js';
 import https from 'https';
 import http from 'http';
-import { __appPath } from './_helpers/globals.js';
+import { __frontendPath } from './_helpers/globals.js';
 import ssl from './_helpers/ssl.js';
 
 logger.info('Starting serveit');
@@ -72,16 +72,16 @@ app.use('/api', jwtAuthGuard(), cors(), readyGuard, api);
 
 // app route
 app.get('/', readyGuard, appGuard, (req, res) => {
-  res.sendFile('index.html', { root: __appPath })
+  res.sendFile('index.html', { root: __frontendPath })
 });
 
 // Catch all for files in _appPath
 app.get('/*', readyGuard, appGuard, (req, res) => {
-  const filePath = join(__appPath, req.path);
+  const filePath = join(__frontendPath, req.path);
   logger.debug(`catch all ${filePath} ${req.path}`)
   // If the path does not exist, send the main app since it could be one of its routes
   if (!existsSync(filePath)) {
-    res.sendFile('index.html', { root: __appPath })
+    res.sendFile('index.html', { root: __frontendPath })
     return;
   }
   // Check if the existing item is a directory or a file.
