@@ -1,7 +1,7 @@
 import { addColors, createLogger, format, LeveledLogMethod, Logger, transports } from 'winston';
 
 const logLevels = {
-    levels: { critical: 0, error: 1, warning: 2, debug: 3, info: 4, connection: 5, transaction: 6 },
+    levels: { critical: 0, error: 1, warning: 2, info: 3, connection: 4, transaction: 5, debug: 6 },
     colors: {
       critical: "bold black redBG",
       error: "red",
@@ -16,7 +16,7 @@ const logLevels = {
 addColors(logLevels.colors);
 
 const logger = createLogger({
-  level: 'transaction',
+  level: process.env.LOG_LEVEL ?? 'transaction',
   levels: logLevels.levels,
   format: format.combine(
     format.timestamp({
