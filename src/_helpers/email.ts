@@ -3,28 +3,33 @@ import { IAccount, Roles } from "typesit";
 import accountService from '../account/service.js'
 import { join, dirname } from 'path';
 import { existsSync, statSync, readdirSync, readFileSync } from 'fs';
-import { __configPath } from "./globals.js";
+import { readConfig, __configPath } from "./globals.js";
 import logger from "./logger.js";
 
 class Email {
     private config
     private transporter
     constructor(config) {
-        this.config = config;
-        // create reusable transporter object using the default SMTP transport
-        this.transporter = nodemailer.createTransport({...config, 
-            secureConnection: true,
-            tls: {
-                 ciphers:"SSLv3",
-             }
-          });
-        this.transporter.verify(function (error, success) {
-            if (error) {
-              logger.error(error);
-            } else {
-              logger.info("SMTP Server is ready to take our messages");
-            }
-          });
+        if (config === undefined) {
+          logger.warning('SMTP configuration not setup yet, stopping email module setup. Please restart after setup complete.')
+        } else {
+          this.config = config;
+          // create reusable transporter object using the default SMTP transport
+          this.transporter = nodemailer.createTransport({...config, 
+              secureConnection: true,
+              tls: {
+                   ciphers:"SSLv3",
+               }
+            });
+          this.transporter.verify(function (error, success) {
+              if (error) {
+                logger.error(error);
+              } else {
+                logger.info("SMTP Server is ready to take our messages");
+              }
+            });
+
+        }
     }
 
     async sendAll(targetRole: Roles, subject: string, message: string){
@@ -52,6 +57,6 @@ class Email {
     }
 }
 
-const config = JSON.parse(readFileSync(join(__configPath, 'smtp.json'), 'utf-8'))
+const config = readConfig(__configPath, 'smtp.json');
 const email = new Email(config)
 export default email
