@@ -34,4 +34,4 @@ jobs:
     - name: Release
       uses: ncipollo/release-action@v1
       with:
-        artifacts: "backend_${GITHUB_REF_NAME}.zip"
+        artifacts: "backend_*.zip"
