@@ -29,8 +29,9 @@ jobs:
     - run: npm run build
     - run: rm -rf node_modules
     - run: rm -f package-lock.json
-    - run: zip -r backend.zip ./dist package.json
+    - run: zip -r backend_${GITHUB_REF_NAME}.zip ./dist package.json
+    # Now release
     - name: Release
       uses: ncipollo/release-action@v1
       with:
-        artifacts: "backend.zip"
+        artifacts: "backend_${GITHUB_REF_NAME}.zip"
