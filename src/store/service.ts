@@ -1,6 +1,6 @@
 import db from '../_helpers/db.js';
 import { JwtPayload } from 'jsonwebtoken';
-import {config} from '../configuration/config.js';
+import {__envConfig} from '../configuration/config.js';
 import transactionService from '../_helpers/transaction.js';
 import accountService from '../account/service.js';
 import { ICartItem, ICartItemSerialized, ICartSerialized, IProduct, IProductDocument, IProductForm, ITransactionForm, ITransactionItem, Roles, TransactionType } from 'typesit';
@@ -72,9 +72,9 @@ async function purchaseCart(payload: JwtPayload, cartSerialized: ICartSerialized
     const products = await Product.find({'_id': { $in: cartSerialized.map((item: ICartItemSerialized): IProduct['id'] => item.id) } });
     // console.log(products)
     // create cart object for invoice
-    let cart = (await Product.find({'_id': { $in: cartSerialized.map((item: ICartItemSerialized): IProduct['id'] => item.id) } }).lean<IProduct[]>()).map(({stock, price, ...keepAttrs}: IProduct): ICartItem => ({...keepAttrs, price: BigInt(price), amount: 0n, total: 0n}));
+    let cart = (await Product.find({'_id': { $in: cartSerialized.map((item: ICartItemSerialized): IProduct['id'] => item.id) } }).lean<IProduct[]>()).map(({stock, price, ...keepAttrs}: IProduct): ICartItem => ({...keepAttrs, price: BigInt(price), amount: BigInt(0), total: BigInt(0)}));
     
-    let sum = 0n;
+    let sum = BigInt(0);
     for (let index = 0; index < cartSerialized.length; index++) {
         const productIndex = products.findIndex((product) => product.id === cartSerialized[index].id)
         if(!products[productIndex]){

@@ -1,12 +1,12 @@
 import mongoose from 'mongoose';
-import {config} from '../configuration/config.js';
+import {__envConfig} from '../configuration/config.js';
 
-if (config.database.url === 'localhost' && config.database.user !== '') {
-    mongoose.connect(`mongodb://${config.database.user}:${config.database.pass}@${config.database.url}:${config.database.port}/${config.database.name}`);
-} else if (config.database.url === 'localhost') {
-    mongoose.connect(`mongodb://${config.database.url}:${config.database.port}/${config.database.name}`);
+if (__envConfig.database.url === 'localhost' && __envConfig.database.user !== '') {
+    mongoose.connect(`mongodb://${__envConfig.database.user}:${__envConfig.database.pass}@${__envConfig.database.url}:${__envConfig.database.port}/${__envConfig.database.name}`);
+} else if (__envConfig.database.url === 'localhost') {
+    mongoose.connect(`mongodb://${__envConfig.database.url}:${__envConfig.database.port}/${__envConfig.database.name}`);
 } else {
-    mongoose.connect(`mongodb+srv://${config.database.user}:${config.database.pass}@${config.database.url}/${config.database.name}?retryWrites=true&w=majority`);
+    mongoose.connect(`mongodb+srv://${__envConfig.database.user}:${__envConfig.database.pass}@${__envConfig.database.url}/${__envConfig.database.name}?retryWrites=true&w=majority`);
 }
 
 const db = mongoose.connection;
@@ -17,7 +17,7 @@ db.on('', (error) => {
     logger.error(error)
 });
 db.once('open', function callback () {
-  logger.info(`Mongodb connection is open to ${config.database.url}/${config.database.name}`);
+  logger.info(`Mongodb connection is open to ${__envConfig.database.url}/${__envConfig.database.name}`);
 });
 
 import account from '../_models/account.model.js';

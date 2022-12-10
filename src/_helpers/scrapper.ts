@@ -8,6 +8,9 @@ import { join } from 'path'
 import { createHash, randomBytes } from 'crypto'
 import express from 'express';
 import { add } from 'winston';
+import { __configPath } from './globals';
+import { getFileConfig  } from '../configuration/config.js';
+import logger from './logger';
 
 interface credentialStore {
     installed: {
@@ -30,10 +33,13 @@ interface tokenStore {
 }
 
 const SCOPES = ['https://www.googleapis.com/auth/gmail.readonly', 'https://www.googleapis.com/auth/gmail.modify'];
-const TOKEN_PATH = join(process.cwd(), 'token.json');
-const CREDENTIALS_PATH = join(process.cwd(), 'credentials.json');
-if (!existsSync(CREDENTIALS_PATH)) {
-    throw "credentials.json is needed"
+const TOKEN_PATH = join(__configPath, 'token.json');
+const CREDENTIALS_PATH = join(__configPath, 'credentials.json');
+const credentialsConfig = getFileConfig(__configPath, 'credentials.json', (err, interval) => {
+    
+});
+if (credentialsConfig === undefined) {
+    logger.warning('Credentials.json is needed, stopping ')
 }
 const credentials = (JSON.parse(readFileSync(CREDENTIALS_PATH, 'utf-8')) as credentialStore).installed;
 

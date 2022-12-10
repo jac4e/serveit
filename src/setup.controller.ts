@@ -10,10 +10,10 @@ import transactionService from './_helpers/transaction.js';
 import { join, dirname } from 'path';
 import { existsSync, statSync, readdirSync, writeFileSync } from 'fs';
 import { app } from './index.js';
-import { __frontendPath, __configPath, __backendPath, __savePath} from './_helpers/globals.js'
-import { authorize, generateAuthUrl, isAuthorized } from './_helpers/scrapper.js';
+import { __frontendPath, __configPath, __backendPath, __savePath, __templatePath} from './_helpers/globals.js'
+// import { authorize, generateAuthUrl, isAuthorized } from './_helpers/scrapper.js';
 import { isIAccountForm, Roles } from 'typesit';
-import { config } from './configuration/config.js';
+import { __envConfig } from './configuration/config.js';
 import logger from './_helpers/logger.js';
 
 const router = express.Router();
@@ -41,7 +41,7 @@ const adminReady = async () => {
 
 const appReady = () => {
     const app = existsSync(join(__frontendPath, '/index.html'));
-    return config.backend.includeApp ? app : true;
+    return __envConfig.backend.includeApp ? app : true;
 }
 
 export const shouldSetup = async () => {
@@ -50,7 +50,7 @@ export const shouldSetup = async () => {
 
 function setupRoute(name, req, res) {
     if (req.path == `/${name}`) {
-        res.sendFile(`setup/${name}.html`, { root: __backendPath })
+        res.sendFile(`setup/${name}.html`, { root: __templatePath })
         return;
     }
     res.redirect(`/setup/${name}?setup_key=${req.query['setup_key']}`)
@@ -114,15 +114,17 @@ async function setupAccount(req, res) {
 }
 
 async function setupScrapper(req, res) {
-    const address = app.get('address')
-    if (address === null || typeof address === 'string') {
-        throw 'listener address error'
-    }
-    app.set('urls', generateAuthUrl(address))
+    // not implemented
+    // const address = app.get('address')
+    // if (address === null || typeof address === 'string') {
+    //     throw 'listener address error'
+    // }
+    // app.set('urls', generateAuthUrl(address))
 }
 
 
 async function setupBranding(req, res) {
+    // not implemented
     // const address = app.get('address')
     // if (address === null || typeof address === 'string') {
     //     throw 'listener address error'
@@ -139,22 +141,23 @@ async function setupSmtp(req, res) {
                 pass: req.body.password
             }
     }
-    writeFileSync(join(__configPath, 'smtp.json'), JSON.stringify(req.body))
+    writeFileSync(join(__configPath, 'smtp.json'), JSON.stringify(smtpConfig))
     res.sendStatus(200);
 }
 
 
 async function authorizeGoogle(req, res) {
+    // not implemented
     // if (isAuthorized()) {
     //     res.sendStatus(404);
     // }
-    const code = req.query['code'];
+    // const code = req.query['code'];
 
-    if (typeof code !== 'string') {
-        throw "authorization code not found"
-    }
-    authorize(code, app.get('urls')['redirect'])
-    res.redirect('/');
+    // if (typeof code !== 'string') {
+    //     throw "authorization code not found"
+    // }
+    // authorize(code, app.get('urls')['redirect'])
+    // res.redirect('/');
 }
 
 export default router;

@@ -3,7 +3,7 @@ import express from 'express';
 import { join, dirname } from 'path';
 import { existsSync, statSync, readdirSync, readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
-import {config} from './configuration/config.js';
+import {__envConfig} from './configuration/config.js';
 import errorHandler from './_helpers/error-handler.js';
 import api from './api.controller.js';
 import setup, { shouldSetup } from './setup.controller.js';
@@ -36,8 +36,8 @@ async function readyGuard(req, res, next) {
 
 // Guards accessing app when config states no app included
 async function appGuard(req, res, next) {
-  if (!config.backend.includeApp) {
-    logger.warning(`appGuard 503 status ${config.backend.includeApp}`)
+  if (!__envConfig.backend.includeApp) {
+    logger.warning(`appGuard 503 status ${__envConfig.backend.includeApp}`)
     res.sendStatus(503);
     return;
   }
@@ -101,7 +101,7 @@ app.use(errorHandler);
 // email.authorize().then(email.processTransfers).catch(console.error);
 
 // start server
-app.set('port', config.backend.port);
+app.set('port', __envConfig.backend.port);
 app.set('setup_key', randomUUID());
 // const listener = app.listen(config.backend.port, );
 
@@ -109,9 +109,9 @@ var httpServer = http.createServer(app);
 var httpsServer = https.createServer({key: ssl.key, cert: ssl.cert}, app);
 
 httpServer.listen(8080);
-const httpsListener = httpsServer.listen(config.backend.port, async () => {
+const httpsListener = httpsServer.listen(__envConfig.backend.port, async () => {
   logger.info('Listening on ' + app.get('port'))
   if (await shouldSetup()){
-    logger.info('Setup required, please use ' + config.backend.url + '/setup?setup_key=' + app.get('setup_key'))
+    logger.info('Setup required, please use ' + __envConfig.backend.url + '/setup?setup_key=' + app.get('setup_key'))
   }
 });

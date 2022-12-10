@@ -4,7 +4,7 @@ import admin from './admin/controller.js';
 import store from './store/controller.js';
 import jwtAuthGuard from './_helpers/jwt.js';
 import cors from 'cors'
-import { __pkg } from './_helpers/globals.js';
+import { __pkg } from './configuration/config.js';
 
 const router = express.Router();
 

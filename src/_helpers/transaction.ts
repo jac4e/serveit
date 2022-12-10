@@ -87,7 +87,7 @@ async function getBalanceByAccountId(accountid: IAccount['id']): Promise<bigint>
     // if length of balance is 0, that means there are no transactions in the database for this account
     // balance defaults to 0 in this case
     if (balance.length === 0){
-        return 0n;
+        return BigInt(0);
     }
     return BigInt(balance[0].balance);
 }

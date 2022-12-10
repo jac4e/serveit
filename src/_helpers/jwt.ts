@@ -1,12 +1,12 @@
 import { expressjwt, Request } from 'express-jwt';
 import { Jwt } from 'jsonwebtoken';
-import {config} from '../configuration/config.js';
+import {__envConfig} from '../configuration/config.js';
 import db from './db.js';
 
 const Account = db.account;
 
 export default function jwtAuthGuard() {
-    const secret = config.backend.jwt;
+    const secret = __envConfig.backend.jwt;
     return expressjwt({ secret: secret,algorithms: ['HS256'], isRevoked: isRevokedCallback }).unless({
         path: [
             // public routes that don't require authentication

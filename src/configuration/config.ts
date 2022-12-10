@@ -4,11 +4,14 @@
 import { Config, Environment, ProcessVariables, ProcessVariablesDefined } from "./config.type";
 import { getProductionConfig } from "./configs/production.config.js";
 import { getDevelopmentConfig } from "./configs/development.config.js";
+import { join } from 'path';
+import { readFile } from 'fs';
 import logger from "../_helpers/logger.js";
+import { __projectPath } from "../_helpers/globals.js";
 
-export const config = getConfig(process.env as unknown as ProcessVariables);
+export const __envConfig = getEnvConfig(process.env as unknown as ProcessVariables);
 
-export function getConfig(processVariables: ProcessVariables): Config {
+export function getEnvConfig(processVariables: ProcessVariables): Config {
     const environment: Environment = processVariables.NODE_ENV as Environment;
     switch (environment) {
         case "production":
@@ -24,6 +27,25 @@ export function getConfig(processVariables: ProcessVariables): Config {
             logger.info('Loading development configuration')
             return getDevelopmentConfig(processVariables);
     }
+}
+
+// Returns a JSON config files when it exists.
+export async function getFileConfig(location: string, name: string, onError: (err, interval) => void): Promise<{ [key: string]: any; }> {
+    const path = join(location, name);
+    // Somehow wait until path exists then return the configuration
+    return new Promise((resolve, reject) => {
+        const configWait = setInterval(() => {
+            // Read config
+            const configFile = readFile(path, 'utf-8', (err, configData) => {
+                if ( err !== null){
+                    onError(err, configWait);
+                    return;
+                }
+                clearInterval(configWait);
+                resolve(JSON.parse(configData));
+            });
+        }, 1000);
+    });
 }
 
 export function defineProcessVariables(processVariables: ProcessVariables): processVariables is ProcessVariablesDefined {
@@ -63,6 +85,13 @@ export function defineProcessVariables(processVariables: ProcessVariables): proc
     return true
 }
 
-export function saveConfig(config: Config) {
+export function saveFileConfig(config: Config) {
 
 }
+
+// Setup package.json configuration
+const pkgConfig = await getFileConfig(__projectPath,'package.json', (err, interval) => {
+    logger.error(err);
+    process.exit(1);
+});
+export const __pkg = pkgConfig
