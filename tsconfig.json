@@ -1,14 +1,14 @@
 {
   "compilerOptions": {
     /* Docs: https://www.typescriptlang.org/tsconfig */ "target": "es2020",
-    "module": "es2020",
-    "outDir": ".",
+    "module": "ES2022",
+    "outDir": "./dist",
     "rootDir": ".",
     "strict": true,
     "noImplicitAny": false,
     "strictNullChecks": true,
-    "checkJs": false,
-    "allowJs": false,
+    "checkJs": true,
+    "allowJs": true,
     "moduleResolution": "node",
     "types": ["node"],
     "lib": ["es7"],
@@ -20,10 +20,12 @@
     "sourceMap": true,
     "allowUnreachableCode": true,
     "useUnknownInCatchVariables": false, // TypeScript 4.4+ only!
-    "composite": true  // required on the dependency project for references to work
+    "composite": true
   },
-  "files": [         // by whitelisting the files to include, TS won't automatically
-    "package.json"   // include all source below root, which is the default.
+  "files": [
+    "package.json",  
+    // "start.cjs" 
   ],
+  // "include": ["src/**/*.ts"],
   "exclude": ["node_modules", "<node_internals>/**"]
 }

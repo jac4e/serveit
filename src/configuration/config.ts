@@ -7,7 +7,7 @@ import { getDevelopmentConfig } from "./configs/development.config.js";
 import { join } from 'path';
 import { readFile } from 'fs';
 import logger from "../_helpers/logger.js";
-import { __projectPath } from "../_helpers/globals.js";
+import { __backendPath, __projectPath } from "../_helpers/globals.js";
 
 export const __envConfig = getEnvConfig(process.env as unknown as ProcessVariables);
 
@@ -90,7 +90,7 @@ export function saveFileConfig(config: Config) {
 }
 
 // Setup package.json configuration
-const pkgConfig = await getFileConfig(__projectPath,'package.json', (err, interval) => {
+const pkgConfig = await getFileConfig(__backendPath,'package.json', (err, interval) => {
     logger.error(err);
     process.exit(1);
 });
