@@ -69,7 +69,7 @@ class SSL {
     private selfSign() {
         // get self sign
         const attrs = [{ name: __pkg.name, value: __envConfig.ssl.subject, type: __pkg.name }];
-        const pems = selfsigned.generate(attrs, { days: 365 });
+        const pems = selfsigned.generate(attrs, { days: 365, keySize: 2048 });
 
         // save self signed
         writeFileSync(__certPath, pems.cert,{mode: 0o600});
