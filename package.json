@@ -6,6 +6,9 @@
   "main": "dist/index.js",
   "scripts": {
     "build": "npx tsc -b src && npm run prepare",
+    "test": "jest",
+    "lint": "eslint --ext .ts src/ test/",
+    "lint:fix": "eslint --fix --ext .ts src/ test/",
     "prepare": "copyfiles -u 1 src/**/*.html dist/",
     "start": "node dist/index.js --enable-source-maps",
     "watch": "npx env-cmd npx tsc-watch --build src --onCompilationComplete 'npm run prepare' --onSuccess 'npm run start'"
@@ -56,6 +59,7 @@
     "@types/express-fileupload": "^1.4.1",
     "@types/express-jwt": "^6.0.4",
     "@types/express-session": "^1.17.5",
+    "@types/jest": "^29.5.2",
     "@types/nodemailer": "^6.4.6",
     "@types/nodemon": "^1.19.2",
     "@types/prettier": "^2.7.1",
@@ -69,9 +73,12 @@
     "copyfiles": "^2.4.1",
     "env-cmd": "^10.1.0",
     "eslint": "^8.25.0",
+    "jest": "^29.5.0",
+    "mongodb-memory-server": "^8.13.0",
     "nodemon": "^2.0.20",
     "prettier": "^2.7.1",
     "rimraf": "^3.0.2",
+    "ts-jest": "^29.1.0",
     "ts-node": "^10.9.1"
   }
 }

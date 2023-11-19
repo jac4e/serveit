@@ -8,7 +8,7 @@
         "checkJs": true,
         "allowJs": true,
         "moduleResolution": "node",
-        "types": ["node"],
+        "types": ["node", "jest"],
         "lib": ["es7"],
         "esModuleInterop": true,
         "resolveJsonModule": true,
