@@ -14,7 +14,8 @@ export function getDevelopmentConfig(processVariables: ProcessVariables ): Confi
     const backend: BackendConfig = {
         port: parseInt(processVariables.BACKEND_PORT ?? "3443"),
         url: `https://${processVariables.BACKEND_DOMAIN ?? "localhost"}:${parseInt(processVariables.BACKEND_PORT ?? "3443")}`,
-        includeApp: processVariables.INCLUDE_APP === "true" ? true : true,
+        includeApp: processVariables.INCLUDE_APP === "true" ? true : false,
+        includeGoogle: processVariables.INCLUDE_GOOGLE === "true" ? true : false,
         jwt: randomBytes(96).toString('hex'),
     }
     const ssl: SSLConfig = {

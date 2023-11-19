@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+
+<head>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-Zenh87qX5JnK2Jl0vWa8Ck2rdkQ2Bzep5IDxbcnCeuOxjzrPF/et3URy9Bv1WTRi" crossorigin="anonymous">
+
+    <script>
+        window.onload = function () {
+            document.getElementById('smtp').style.display = 'none';
+            document.getElementById('provider').addEventListener('change', function () {
+                var style = this.value == 'smtp' ? 'block' : 'none';
+                var required = this.value == 'smtp';
+                document.getElementById('smtp').style.display = style;
+                document.getElementById('host').required = required;
+                document.getElementById('port').required = required;
+                document.getElementById('secure').required = required;
+                document.getElementById('user').required = required;
+                document.getElementById('password').required = required;
+            });
+        }
+    </script>
+</head>
+
+<body>
+    <div class="container">
+        <div class="row">
+            <div class="col-12">
+                <h1>Initial setup</h1>
+            </div>
+            <div class="col-12">
+                <h4>Setup for Email Notifications</h2>
+            </div>
+            <div class="col-12">
+                <form id="admin" method="post" action="">
+                    <!-- Email Provider Selector -->
+                    <div class="mb-3">
+                        <label for="provider" class="form-label">Email Provider</label>
+                        <select id="provider" required="required" class="form-select" name="provider">
+                            <option value="smtp">SMTP</option>
+                            <option value="google">Google</option>
+                            <option value="mock">Mock</option>
+                            <option selected="selected" value="none">None</option>
+                        </select>
+                    </div>
+                    <!-- SMTP (hide unless smtp is selected)-->
+                    <div id="smtp">
+                    <div class="mb-3">
+                        <label for="host" class="form-label">Host</label>
+                        <input type="text" class="form-control" name="host" id="host">
+                    </div>
+                    <div class="mb-3">
+                        <label for="port" class="form-label">Port</label>
+                        <input type="number" class="form-control" name="port" id="port">
+                    </div>
+                    <div class="mb-3">
+                        <input type="checkbox" class="form-check-input" name="secure" id="secure">
+                        <label for="secure" class="form-check-label">Use TLS</label>
+                    </div>
+                    <div class="mb-3">
+                        <label for="user" class="form-label">Username</label>
+                        <input type="text" class="form-control" name="user" id="user">
+                    </div>
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Password</label>
+                        <input type="text" class="form-control" name="password" id="password" >
+                    </div>
+                    </div>
+                    <!--Submit-->
+                    <div class="mb-3">
+                        <button class="btn btn-primary" class="form-control" id="submit">Submit</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

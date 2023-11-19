@@ -15,6 +15,20 @@ export interface BackendConfig {
     port: number;
     jwt: string;
     includeApp: boolean;
+    includeGoogle: boolean;
+}
+
+export interface EmailConfigFile {
+    provider: "smtp" | "google" | "mock" | "none";
+    smtp?: {
+        host: string,
+        port: number,
+        secure: boolean,
+        auth: {
+            user: string,
+            pass: string
+        }
+    }
 }
 
 export interface Config {
@@ -31,6 +45,7 @@ export interface ProcessVariables {
     NODE_ENV?: string;
     DB_URL?: string;
     INCLUDE_APP?: string;
+    INCLUDE_GOOGLE?: string;
     DB_PORT?: string;
     DB_USER?: string;
     DB_PASS?: string;
@@ -46,6 +61,7 @@ export interface ProcessVariablesDefined {
     DB_PORT: string;
     DB_USER: string;
     INCLUDE_APP: string;
+    INCLUDE_GOOGLE: string;
     DB_PASS: string;
     BACKEND_DOMAIN: string;
     BACKEND_PORT: string;

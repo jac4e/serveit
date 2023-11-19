@@ -12,10 +12,21 @@
                 <h1>Initial setup</h1>
             </div>
             <div class="col-12">
-                <h4>Email scrapper setup</h2>
+                <h4>Google setup</h2>
             </div>
             <div class="col-12">
-                <form id="admin" method="post" action="setup/gmail">
+                <div class="form-text">This setup requires the use of goole apis through oauth. To get started, go to
+                    <a href="https://console.cloud.google.com/apis/dashboard">https://console.cloud.google.com/apis/dashboard</a>
+                    and create a new project. Once created, go to the credentials tab and create a new oauth client
+                    id. Select web application as the application type and add the following to the authorized
+                    redirect URIs: "BACKEND_URL/setup/oauth"
+                    Example: "https://localhost:3443/setup/oauth" (good for testing, but not for production)
+                    Example: "https://phrydge.engphys.ca/setup/oauth" (good for production)
+                    Once created, copy the client id and client secret into the form below.
+                </div>
+            </div>
+            <div class="col-12">
+                <form id="admin" method="post">
                     <div class="form-text">By clicking continue, you will be redirected to a google oauth page. This will be used to authorize
                         the backend for read, modify, and send email permissions on your club gmail account. The
                         authorized permissions will only be used to send notification emails to users, site reports

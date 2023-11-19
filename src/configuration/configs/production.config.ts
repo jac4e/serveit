@@ -14,6 +14,7 @@ export function getProductionConfig(processVariables: ProcessVariablesDefined): 
     const backend: BackendConfig = {
         url: `https://${processVariables.BACKEND_DOMAIN}:${parseInt(processVariables.BACKEND_PORT)}`,
         includeApp: processVariables.INCLUDE_APP === "true" ? true : false,
+        includeGoogle: processVariables.INCLUDE_GOOGLE === "true" ? true : false,
         port: parseInt(processVariables.BACKEND_PORT),
         jwt: randomBytes(96).toString('hex'),
     }
