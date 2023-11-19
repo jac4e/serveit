@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 import {__envConfig} from '../configuration/config.js';
 
-const srv_string = __envConfig.database.url === 'localhost' ? '' : '+srv';
+const srv_string = __envConfig.database.url === 'localhost' && __envConfig.database.port === '' ? '' : '+srv';
 const account_string = __envConfig.database.user === '' ? '' : `${__envConfig.database.user}:${__envConfig.database.pass}@`;
 const url_string = __envConfig.database.port === '' ? __envConfig.database.url : `${__envConfig.database.url}:${__envConfig.database.port}`;
 
