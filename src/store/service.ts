@@ -111,9 +111,11 @@ async function purchaseCart(payload: JwtPayload, cartSerialized: ICartSerialized
     for (let index = 0; index < cart.length; index++) {
         products[index].stock = (BigInt(products[index].stock) - BigInt(cart[index].amount)).toString();
         // Notify admin if stock has been reduced to zero
-        const subject = `Spendit - ${products[index].name} is Out of Stock`;
-        const message = `Hi Admins,\nThe last ${products[index].name} has just been purchased.`
-        email.sendAll(Roles.Admin, subject, message)
+        if (products[index].stock === '0') {
+            const subject = `Spendit - ${products[index].name} is Out of Stock`;
+            const message = `Hi Admins,\nThe last ${products[index].name} has just been purchased.`
+            email.sendAll(Roles.Admin, subject, message)
+        }
         products[index].save();
     }
 }
