@@ -54,7 +54,7 @@ app.use((req, res, next) => {
       origin: req.get('Origin'),
       userAgent: req.get('User-Agent'),
     }
-    logger.connection(data);
+    logger.connection(JSON.stringify(data));
     next();
 })
 
