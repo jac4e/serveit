@@ -31,12 +31,10 @@ async function auth(credentials: ICredentials): Promise<{ account: IAccount, tok
     username: credentials.username
   });
 
+  const match = await bcrypt.compare(credentials.password, account?.hash || "$2b$10$rQweXBgpHcRXB8nblwv7JO4URRkvC7GjMhNgDPJA35HNcG383YG8W")
+
   // Account not found
-  if (account === null) {
-    // compare to random hash to help mitigate timing attacks
-    // this may be foolish
-    // it may also prevent people from discovering user accounts through brute force
-    await bcrypt.compare(credentials.password, "$2b$10$rQweXBgpHcRXB8nblwv7JO4URRkvC7GjMhNgDPJA35HNcG383YG8W")
+  if (account === null || match === false) {
     throw `Auth error username or password is incorrect`
   }
 
@@ -45,28 +43,22 @@ async function auth(credentials: ICredentials): Promise<{ account: IAccount, tok
     throw `Auth error account not verified`
   }
 
-  const match = await bcrypt.compare(credentials.password, account.hash)
-
-  if (match) {
-    const token = jwt.sign({
-      sub: account.id,
-      sid: account.sessionid,
-      permissions: account.role
-    }, secret, {
-      expiresIn: '7d'
-    })
-    const balance = await getBalance(account.id);
-    // toJSON sanitization is not working
-    const sanitizedAccount = await Account.findById(account.id).lean<IAccount>();
-    return {
-      account: {
-        ...sanitizedAccount,
-        balance: balance,
-      },
-      token: token
-    }
-  } else {
-    throw `Auth error username or password is incorrect`
+  const token = jwt.sign({
+    sub: account.id,
+    sid: account.sessionid,
+    permissions: account.role
+  }, secret, {
+    expiresIn: '7d'
+  })
+  const balance = await getBalance(account.id);
+  // toJSON sanitization is not working
+  const sanitizedAccount = await Account.findById(account.id).lean<IAccount>();
+  return {
+    account: {
+      ...sanitizedAccount,
+      balance: balance,
+    },
+    token: token
   }
 }
 
@@ -111,6 +103,13 @@ async function create(accountParam: IAccountForm): Promise<void> {
     username: accountParam.username
   })) {
     throw `username '${accountParam.username}' is already taken`
+  }
+
+  // make sure email is not taken
+  if (await Account.findOne({
+    email: accountParam.email
+  })) {
+    throw `email '${accountParam.email}' is already taken`
   }
 
   // Password validation
