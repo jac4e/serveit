@@ -43,6 +43,7 @@ class Email {
                     logger.error(`Email provider ${config.provider} not found`);
                     break;
             }
+            logger.info(`Email provider ${config.provider} configured`);
         });
     }
 
@@ -65,6 +66,7 @@ class Email {
 
 class EmailProviderMock extends EmailProvider {
     configure(config: Promise<{[key: string]: any;}>) : void {
+        logger.info("Mock email provider configured");
         return;
     }
     sendAll(targetRole: Roles, subject: string, message: string) : void {
@@ -221,15 +223,6 @@ class GmailProvider extends EmailProvider {
 
             this.queue.length = 0;
         },1000);
-
-        // simple ten minute interval that sends test email to jfourie@ualberta.ca to see what hapens when oauth token expires
-        setInterval(() => {
-            this.queue.push({
-                to: 'jfourie@ualberta.ca',
-                subject: 'OAuth Expiry Test',
-                text: 'Oauth Expiry Test'
-            })
-        }, 600000);
 
         this.configure(config);
     }
