@@ -192,10 +192,10 @@ async function getAll(): Promise<IAccount[]> {
 async function getById(id: string): Promise<IAccount> {
   // console.log("getbyid",id)
   const account = await Account.findById(id).lean<IAccount>();
-  const balance = await getBalance(id);
   if (account === null) {
     throw "account not found"
   }
+  const balance = await getBalance(id);
   account.balance = balance;
   // console.log(test);
   return account;

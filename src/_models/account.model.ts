@@ -38,6 +38,9 @@ schema.post(['find', 'findOne', 'findOneAndUpdate'], function (res) {
 });
 
 function transformDoc(doc) {
+    if (!doc) {
+        return;
+    }
     doc.id = doc._id.toString();
     delete doc._id;
     delete doc.__v;

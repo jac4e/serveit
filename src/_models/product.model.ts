@@ -41,6 +41,9 @@ schema.post(['find', 'findOne', 'findOneAndUpdate'], function (res) {
 });
 
 function transformDoc(doc) {
+    if (!doc) {
+        return;
+    }
     doc.id = doc._id.toString();
     doc.stock = BigInt(doc.stock)
     doc.price = BigInt(doc.price)

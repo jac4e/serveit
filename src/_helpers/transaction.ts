@@ -15,8 +15,10 @@ async function create(transactionParam: ITransactionForm): Promise<void> {
         throw 'invalid transaction type'
     }
 
-    // Check if username valid
-    const account = await accountService.getById(transactionParam.accountid);
+    // Check if account valid
+    const account = await accountService.getById(transactionParam.accountid).catch(err => {
+        throw err;
+    });
 
     let transaction = new Transaction();
 
