@@ -36,6 +36,7 @@
     "googleapis": "^105.0.0",
     "greenlock-store-fs": "^3.2.2",
     "image-size": "^1.0.2",
+    "jsdom": "^24.0.0",
     "mailauth": "^4.0.2",
     "mongoose": "^6.6.5",
     "mongoose-long": "^0.5.1",
