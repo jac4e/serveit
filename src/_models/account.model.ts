@@ -6,7 +6,7 @@ const schema = new mongoose.Schema<IAccountDocument, Model<IAccountDocument>>({
     username: { type: String, trim: true, unique: true, required: true },
     firstName: { type: String, trim: true, required: true },
     lastName: { type: String, trim: true, required: true },
-    email: { type: String, trim: true, required: true },
+    email: { type: String, trim: true, required: true, unique: true },
     hash: { type: String, trim: true, required: true },
     sessionid: { type: String, trim: true, unique: true, required: true },
     notify: { type: Boolean, default: false },
