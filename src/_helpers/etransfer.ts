@@ -1,4 +1,5 @@
 import goauth from "./goauth.js";
+import Processor from "./process.js";
 import { Auth, gmail_v1, google } from "googleapis";
 import { authenticate } from 'mailauth';
 import logger from './logger.js';
@@ -30,7 +31,7 @@ function urlSafeBase64Decode(base64: string): string {
 }
 
 
-class EtransferProcessor {
+class EtransferProcessor extends Processor {
     private gmail: gmail_v1.Gmail | null;
     private labelIds: { 
         incoming: string;
@@ -40,22 +41,27 @@ class EtransferProcessor {
 
     // For future use to potentially stop the process
     // just and idea I had so that there could be a system dashboard page that can stop this and other interval tasks
-    private processTimer: NodeJS.Timeout | null;
-    private isStopped: boolean;
 
     constructor(config: { [key: string]: any; }) {
+        super(1000 * 60 * 5); // 5 minutes
         this.gmail = null;
         this.labelIds = null;
-        this.processTimer = null;
-        this.isStopped = true;
 
         console.log("EtransferProcessor initialized")
 
         this.configure(config).then(() => {
             if (this.isConfigured()) {
-                this.processIncomingEtransfers();
+                this.process();
             }
         });
+    }
+
+    stopHandler() {
+        logger.info("Stopping EtransferProcessor")
+    }
+
+    startHandler() {
+        logger.info("Starting EtransferProcessor")
     }
 
     // Trying out different method compared to setinterval
@@ -64,11 +70,7 @@ class EtransferProcessor {
     // Best way forward would be to setup a pub.sub for etransfer
     // https://stackoverflow.com/questions/71924157/how-does-users-watch-in-gmail-google-api-listen-for-notifications
     // But for now, we will check mailbox every 5 minutes for new messages
-    private async processIncomingEtransfers() {
-        if (this.isStopped) {
-            return;
-        }
-
+    async processHandler() {
         // Don't do anything if gmail is not configured
         if (this.gmail === null && this.labelIds === null) {
             logger.warning("Etransfer Gmail Authentication not configured");
@@ -121,8 +123,6 @@ class EtransferProcessor {
             // Wait 0.25 second before verifying next etransfer
             await new Promise(resolve => setTimeout(resolve, 250));
         }
-        logger.info("Finished processing incoming e-transfers")
-        this.processTimer = setTimeout(this.processIncomingEtransfers, 1000 * 60 * 5);
     }
 
     private async configure(config: { [key: string]: any; }) {
@@ -154,18 +154,6 @@ class EtransferProcessor {
 
     isConfigured() {
         return this.gmail !== null && this.labelIds !== null;
-    }
-
-    start() {
-        this.isStopped = false;
-        this.processIncomingEtransfers();
-    }
-
-    stop() {
-        this.isStopped = true;
-        if (this.processTimer !== null) {
-            clearTimeout(this.processTimer);
-        }
     }
 
     private async getLabels() {
