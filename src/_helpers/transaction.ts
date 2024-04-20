@@ -2,7 +2,7 @@ import db from './db.js';
 import accountService from '../account/service.js';
 import { ITransaction, IAccount, IProduct, ITransactionDocument, ITransactionForm, ITransactionItem, TransactionType } from 'typesit';
 import logger from './logger.js';
-import email from './email.js';
+import email from '../_tasks/email.js';
 
 const Transaction = db.transaction;
 

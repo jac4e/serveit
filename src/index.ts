@@ -21,8 +21,8 @@ import { EmailConfigFile } from './configuration/config.type.js';
 import { writeFileSync } from 'fs';
 import bcrypt from 'bcrypt';
 import { IAccountForm, Roles, isIAccountForm } from 'typesit';
-import etransfer from './_helpers/etransfer.js';
-import email from './_helpers/email.js';
+import etransfer from './_tasks/etransfer.js';
+import email from './_tasks/email.js';
 
 logger.info('Starting serveit');
 

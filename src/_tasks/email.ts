@@ -1,15 +1,15 @@
 import nodemailer, { Transporter } from "nodemailer";
 import { IAccount, Roles } from "typesit";
 import accountService from '../account/service.js'
-import { __configPath } from "./globals.js";
+import { __configPath } from "../_helpers/globals.js";
 import { getFileConfig } from "../configuration/config.js";
-import logger from "./logger.js";
+import logger from "../_helpers/logger.js";
 import SMTPTransport from "nodemailer/lib/smtp-transport/index.js";
 import Mail from "nodemailer/lib/mailer/index.js";
-import goauth from "./goauth.js";
-import { EmailConfigFile } from "../configuration/config.type";
+import goauth from "../_helpers/goauth.js";
+import { EmailConfigFile } from "../configuration/config.type.js";
 import { Auth, gmail_v1, google } from "googleapis";
-import Processor from "./process.js";
+import Task from "./task.js";
 
 interface EmailOptions {
     to?: string,
@@ -23,12 +23,12 @@ abstract class EmailProvider {
     abstract isConfigured() : boolean;
 }
 
-class EmailProcessor extends Processor{
+class EmailTask extends Task{
     private provider: EmailProvider | null;
     private queue: EmailOptions[]
     
     constructor(config: Promise<EmailConfigFile>) {
-        super(1000 * 60 * 5);
+        super("email", 1000 * 60 * 5);
         this.provider = null;
         this.queue = [] as EmailOptions[];
         this.configure(config);
@@ -64,7 +64,7 @@ class EmailProcessor extends Processor{
     startHandler() {
     }
 
-    async processHandler() {
+    async taskHandler() {
         if (this.provider === null || !this.provider.isConfigured()) {
             logger.warning("Email provider not configured");
             return;
@@ -245,5 +245,5 @@ class GmailProvider extends EmailProvider {
 }
 
 const emailConfig = getFileConfig(__configPath, 'email.json', (err, interval) => {}) as Promise<EmailConfigFile>
-const email = new EmailProcessor(emailConfig);
+const email = new EmailTask(emailConfig);
 export default email

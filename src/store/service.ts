@@ -4,7 +4,7 @@ import {__envConfig} from '../configuration/config.js';
 import transactionService from '../_helpers/transaction.js';
 import accountService from '../account/service.js';
 import { ICartItem, ICartItemSerialized, ICartSerialized, IProduct, IProductDocument, IProductForm, ITransactionForm, ITransactionItem, Roles, TransactionType } from 'typesit';
-import email from '../_helpers/email.js';
+import email from '../_tasks/email.js';
 
 const Product = db.product;
 

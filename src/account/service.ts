@@ -8,7 +8,7 @@ import { zxcvbn, zxcvbnOptions } from '@zxcvbn-ts/core'
 import zxcvbnCommonPackage from '@zxcvbn-ts/language-common';
 import zxcvbnEnPackage from '@zxcvbn-ts/language-en';
 import { ITransaction, IAccountDocument, IAccountForm, IAccount, ICredentials, Roles } from 'typesit';
-import email from '../_helpers/email.js';
+import email from '../_tasks/email.js';
 
 
 const zxcvbnBaseSettings = {

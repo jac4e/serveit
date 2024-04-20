@@ -1,13 +1,13 @@
-import goauth from "./goauth.js";
-import Processor from "./process.js";
+import goauth from "../_helpers/goauth.js";
+import Task from "./task.js";
 import { Auth, gmail_v1, google } from "googleapis";
 import { authenticate } from 'mailauth';
-import logger from './logger.js';
+import logger from '../_helpers/logger.js';
 import jsdom from 'jsdom';
 import e from "express";
-import Transaction from "./transaction.js";
+import Transaction from "../_helpers/transaction.js";
 import { ITransactionForm, TransactionType } from "typesit";
-import { __savePath } from "./globals.js";
+import { __savePath } from "../_helpers/globals.js";
 import { join, dirname } from 'path';
 import { existsSync, mkdirSync, readFileSync, statSync, readdirSync, writeFileSync } from 'fs';
 
@@ -31,7 +31,7 @@ function urlSafeBase64Decode(base64: string): string {
 }
 
 
-class EtransferProcessor extends Processor {
+class EtransferTask extends Task {
     private gmail: gmail_v1.Gmail | null;
     private labelIds: { 
         incoming: string;
@@ -43,7 +43,7 @@ class EtransferProcessor extends Processor {
     // just and idea I had so that there could be a system dashboard page that can stop this and other interval tasks
 
     constructor(config: { [key: string]: any; }) {
-        super(1000 * 60 * 5); // 5 minutes
+        super("etransfer", 1000 * 60 * 5); // 5 minutes
         this.gmail = null;
         this.labelIds = null;
 
@@ -51,7 +51,7 @@ class EtransferProcessor extends Processor {
 
         this.configure(config).then(() => {
             if (this.isConfigured()) {
-                this.process();
+                this.task();
             }
         });
     }
@@ -70,7 +70,7 @@ class EtransferProcessor extends Processor {
     // Best way forward would be to setup a pub.sub for etransfer
     // https://stackoverflow.com/questions/71924157/how-does-users-watch-in-gmail-google-api-listen-for-notifications
     // But for now, we will check mailbox every 5 minutes for new messages
-    async processHandler() {
+    async taskHandler() {
         // Don't do anything if gmail is not configured
         if (this.gmail === null && this.labelIds === null) {
             logger.warning("Etransfer Gmail Authentication not configured");
@@ -379,5 +379,5 @@ class EtransferProcessor extends Processor {
 
 // const etransferConfig = getFileConfig(__configPath, 'email.json', (err, interval) => {}) as Promise<EmailConfigFile>
 const etransferConfig = {}
-const etransfer = new EtransferProcessor(etransferConfig)
+const etransfer = new EtransferTask(etransferConfig)
 export default etransfer
