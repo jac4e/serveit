@@ -9,17 +9,28 @@ import Mail from "nodemailer/lib/mailer/index.js";
 import goauth from "./goauth.js";
 import { EmailConfigFile } from "../configuration/config.type";
 import { Auth, gmail_v1, google } from "googleapis";
+import Processor from "./process.js";
 
-abstract class EmailProvider {
-    abstract sendAll(targetRole: Roles, subject: string, message: string) : void;
-    abstract send(account: IAccount, subject: string, message: string) : void;
+interface EmailOptions {
+    to?: string,
+    bcc?: string[],
+    subject: string,
+    text: string
 }
 
-class Email {
+abstract class EmailProvider {
+    abstract mailHandler(queue: EmailOptions) : void;
+    abstract isConfigured() : boolean;
+}
+
+class EmailProcessor extends Processor{
     private provider: EmailProvider | null;
+    private queue: EmailOptions[]
     
     constructor(config: Promise<EmailConfigFile>) {
+        super(1000 * 60 * 5);
         this.provider = null;
+        this.queue = [] as EmailOptions[];
         this.configure(config);
     };
 
@@ -43,8 +54,35 @@ class Email {
                     logger.error(`Email provider ${config.provider} not found`);
                     break;
             }
+
             logger.info(`Email provider ${config.provider} configured`);
         });
+    }
+
+    stopHandler() {
+    }
+    startHandler() {
+    }
+
+    async processHandler() {
+        if (this.provider === null || !this.provider.isConfigured()) {
+            logger.warning("Email provider not configured");
+            return;
+        }
+
+        // Make copy of queue and then empty the queue
+        const toProcess = this.queue.map(message => message);
+        this.queue.length = 0;
+
+        // Send all messages in queue
+        for (let index = 0; index < toProcess.length; index++) {
+            try {
+                this.provider.mailHandler(toProcess[index]);
+            } catch (error) {
+                logger.error(error);
+                this.queue.push(toProcess[index]);                    
+            }
+        }
     }
 
     async sendAll(targetRole: Roles, subject: string, message: string) {
@@ -52,83 +90,6 @@ class Email {
             logger.warning("Email provider not configured");
             return;
         }
-        this.provider.sendAll(targetRole, subject, message);
-    }
-
-    async send(account: IAccount, subject: string, message: string) {
-        if (this.provider === null) {
-            logger.warning("Email provider not configured");
-            return;
-        }
-        this.provider.send(account, subject, message);
-    }
-}
-
-class EmailProviderMock extends EmailProvider {
-    configure(config: Promise<{[key: string]: any;}>) : void {
-        logger.info("Mock email provider configured");
-        return;
-    }
-    sendAll(targetRole: Roles, subject: string, message: string) : void {
-        // Log
-        logger.info(`Sending email to all ${targetRole} users with subject: ${subject} and message: ${message}`);
-    }
-    send(account: IAccount, subject: string, message: string) : void {
-        // Log
-        logger.info(`Sending email to ${account.email} with subject: ${subject} and message: ${message}`);
-    }
-}
-
-
-class SMTPProvider extends EmailProvider {
-    private config: { [key: string]: any; };
-    private transporter: Transporter<SMTPTransport.SentMessageInfo>;
-    private queue: Mail.Options[]
-    private mailHandler: NodeJS.Timer;
-    constructor(config: { [key: string]: any; }) {
-        super();
-        this.config = config;
-        this.queue = [] as Mail.Options[];
-
-        // Configure
-
-        this.transporter = nodemailer.createTransport(this.config);
-        this.transporter.verify(function (error, success) {
-            if (error) {
-                logger.error(error);
-            } else {
-                logger.info("SMTP Server is ready to take our messages");
-            }
-        });
-
-        // Setup mail queue handler
-        // Process mail queue every second
-        this.mailHandler = setInterval(() => {
-            // Don't do anything if mailer isnt configured
-            if (this.config === null || this.transporter === null) {
-                return;
-            }
-
-            // Make copy of queue and then empty the queue
-            const toProcess = this.queue.map(message => message);
-            this.queue.length = 0;
-
-            // Send all messages in queue
-            for (let index = 0; index < toProcess.length; index++) {
-                try {
-                    this.transporter.sendMail({
-                        from: `<${this.config.auth.user}>`, // sender address
-                        ...toProcess[index]
-                    });
-                } catch (error) {
-                    logger.error(error);
-                    this.queue.push(toProcess[index]);                    
-                }
-            }
-        },1000);
-    }
-
-    async sendAll(targetRole: Roles, subject: string, message: string){
         const accounts = await accountService.getAll()
         const emails = accounts.map(({role, email}) => {
             if (targetRole === role) {
@@ -143,42 +104,74 @@ class SMTPProvider extends EmailProvider {
           subject: subject, // Subject line
           text: message, // plain text body
         });
+        // this.provider.sendAll(targetRole, subject, message);
     }
 
-    async send(account: IAccount, subject: string, message: string){
+    async send(account: IAccount, subject: string, message: string) {
+        if (this.provider === null) {
+            logger.warning("Email provider not configured");
+            return;
+        }
         this.queue.push({
-          to: account.email, // list of receivers
-          subject: subject, // Subject line
-          text: message, // plain text body
+            to: account.email, // list of receivers
+            subject: subject, // Subject line
+            text: message, // plain text body
+        });
+        // this.provider.send(account, subject, message);
+    }
+}
+
+class EmailProviderMock extends EmailProvider {
+    configure(config: Promise<{[key: string]: any;}>) : void {
+        logger.info("Mock email provider configured");
+        return;
+    }
+
+    isConfigured(): boolean {
+        return true;
+    }
+
+    mailHandler(mail: EmailOptions) : void {
+        logger.info(`Mock email provider sending email to ${mail.to || mail.bcc} with subject: ${mail.subject} and message: ${mail.text}`);
+    }
+}
+
+
+class SMTPProvider extends EmailProvider {
+    private config: { [key: string]: any; };
+    private transporter: Transporter<SMTPTransport.SentMessageInfo>;
+
+    constructor(config: { [key: string]: any; }) {
+        super();
+        this.config = config;
+
+        // Configure
+
+        this.transporter = nodemailer.createTransport(this.config);
+        this.transporter.verify(function (error, success) {
+            if (error) {
+                logger.error(error);
+            } else {
+                logger.info("SMTP Server is ready to take our messages");
+            }
         });
     }
-}
 
-interface credentialStore {
-    installed: {
-        client_id: string,
-        project_id: string,
-        auth_uri: string,
-        token_uri: string,
-        auth_provider_x509_cert_url: string,
-        client_secret:  string,
-        redirect_uris: string[]
+    isConfigured(): boolean {
+        return this.config !== null && this.transporter !== null;
     }
-}
 
-interface tokenStore {
-    type: string,
-    client_id: string,
-    client_secret: string,
-    refresh_token: string,
-    expiry: string
+    mailHandler(mail: Mail.Options) {
+        this.transporter.sendMail({
+            from: `<${this.config.auth.user}>`, // sender address
+            ...mail
+        });
+    }
 }
 
 class GmailProvider extends EmailProvider {
     // private oauth2Client
     private gmail: gmail_v1.Gmail | null;
-    private mailHandler: NodeJS.Timer;
-    private queue: { [key: string]: any; }[];
 
     constructor(config: { [key: string]: any; }) {
         super();
@@ -189,45 +182,35 @@ class GmailProvider extends EmailProvider {
         //     auth: oauth2Client,
         // })
         this.gmail = null;
-        this.queue = [] as { [key: string]: any; }[];
-
-        // Setup mail queue handler
-        // Process mail queue every second
-        this.mailHandler = setInterval(() => {
-            // Don't do anything if mailer isnt configured
-            if (this.gmail === null) {
-                return;
-            }
-
-            // Make copy of queue and then empty the queue
-            const toProcess = this.queue.map(message => message);
-            this.queue.length = 0;
-
-            // Send all messages in queue
-            for (let index = 0; index < toProcess.length; index++) {
-
-                // Error handling: if we are unable to send email, add message back to queue so it can be retried
-                try {
-                    this.gmail.users.messages.send({
-                        userId: 'me',
-                        requestBody: {
-                            raw: this.createMessage(toProcess[index].to, toProcess[index].subject, toProcess[index].text)
-                        }
-                    })
-                } catch (error) {
-                    logger.error(error);
-                    this.queue.push(toProcess[index]);    
-                }
-                
-            }
-
-            this.queue.length = 0;
-        },1000);
 
         this.configure(config);
     }
 
-    async configure(config: { [key: string]: any; }) {
+    isConfigured(): boolean {
+        return this.gmail !== null;
+    }
+
+    mailHandler(mail: EmailOptions) {
+        if (this.gmail === null) {
+            throw "Gmail not configured"
+        }
+
+        // Why is address inferred type is string | string[] | undefined
+        const address = mail.to || mail.bcc;
+
+        if (address === undefined) {
+            throw "No to or bcc address provided"
+        }
+
+        this.gmail.users.messages.send({
+            userId: 'me',
+            requestBody: {
+                raw: this.createMessage(address, mail.subject, mail.text)
+            }
+        })
+    }
+
+    private async configure(config: { [key: string]: any; }) {
         // wait for oauth2Client to be configured
         while (goauth.oauth2Client === null) {
             await new Promise(resolve => setTimeout(resolve, 100));
@@ -239,38 +222,20 @@ class GmailProvider extends EmailProvider {
         })
     }
 
-    async sendAll(targetRole: Roles, subject: string, message: string){
-        const accounts = await accountService.getAll()
-        const emails = accounts.map(({role, email}) => {
-            if (targetRole === role) {
-                return email;
-            } else {
-              return '';
-            }
-        })
-
-        this.queue.push({
-          to: emails, // list of receivers
-          subject: subject, // Subject line
-          text: message, // plain text body
-        });
-    }
-
-    async send(account: IAccount, subject: string, message: string){
-        this.queue.push({
-          to: account.email, // list of receivers
-          subject: subject, // Subject line
-          text: message, // plain text body
-        });
-    }
-
     private createMessage(recipients: string[] | string, subject: string, body: string) {
-        const to = Array.isArray(recipients) ? recipients.join(', ') : recipients;
+        if (Array.isArray(recipients) && recipients.length === 0) {
+            throw "No recipients provided"
+        }
+
+        if (typeof recipients === 'string' && recipients === '') {
+            throw "No recipients provided"
+        }
+
         const message = [
             'Content-Type: text/plain; charset="UTF-8"\n',
             'MIME-Version: 1.0\n',
             'Content-Transfer-Encoding: 7bit\n',
-            'to: ', to, '\n',
+            (typeof recipients === 'string') ? `to: ${recipients}\n` : `bcc: ${recipients.join(', ')}\n`,
             'subject: ', subject, '\n\n',
             body
         ].join('');
@@ -280,5 +245,5 @@ class GmailProvider extends EmailProvider {
 }
 
 const emailConfig = getFileConfig(__configPath, 'email.json', (err, interval) => {}) as Promise<EmailConfigFile>
-const email = new Email(emailConfig)
-export default email
+const emailProcessor = new EmailProcessor(emailConfig);
+export default emailProcessor
