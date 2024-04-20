@@ -47,7 +47,7 @@ class EtransferProcessor {
         this.gmail = null;
         this.labelIds = null;
         this.processTimer = null;
-        this.isStopped = false;
+        this.isStopped = true;
 
         console.log("EtransferProcessor initialized")
 
@@ -154,6 +154,18 @@ class EtransferProcessor {
 
     isConfigured() {
         return this.gmail !== null && this.labelIds !== null;
+    }
+
+    start() {
+        this.isStopped = false;
+        this.processIncomingEtransfers();
+    }
+
+    stop() {
+        this.isStopped = true;
+        if (this.processTimer !== null) {
+            clearTimeout(this.processTimer);
+        }
     }
 
     private async getLabels() {
