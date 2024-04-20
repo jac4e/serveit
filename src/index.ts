@@ -16,8 +16,46 @@ import https from 'https';
 import http from 'http';
 import { __frontendPath } from './_helpers/globals.js';
 import ssl from './_helpers/ssl.js';
+import { writeFileSync } from 'fs';
 
 logger.info('Starting serveit');
+
+// Check if we are in development mode
+if (__envConfig.environment === 'development') {
+  logger.info('Development mode');
+
+  // Generate random password for dev account
+  // Protects somewhat against unauthorized access on a misconfigured server
+  const password = randomUUID().substring(0, 16);
+  // Log password
+  logger.info(`Dev account password: ${password}`);
+
+  // Setup development environment
+  //   dev account
+  const devaccount: IAccountForm = {
+    username: 'dev',
+    firstName: 'dev',
+    lastName: 'dev',
+    email: 'dev@dev.dev',
+    role: Roles['Admin'],
+    password: password,
+  }
+  
+  if (await db.account.countDocuments() === 0) {
+    const devAccount = new db.account(devaccount);
+    devAccount.hash = bcrypt.hashSync(devaccount.password as string, 10);
+    devAccount.sessionid = randomUUID();
+    await devAccount.save();
+  }
+
+  // Mock Email
+  const emailConfig: EmailConfigFile = {
+    provider: 'mock',
+  }
+  writeFileSync(join(__configPath, 'email.json'), JSON.stringify(emailConfig))
+
+}
+
 
 // Check that ssl cert and key are defined
 ssl.exists()
