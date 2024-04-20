@@ -14,9 +14,15 @@ import bodyParser from 'body-parser';
 import logger from './_helpers/logger.js';
 import https from 'https';
 import http from 'http';
-import { __frontendPath } from './_helpers/globals.js';
+import { __configPath, __frontendPath } from './_helpers/globals.js';
 import ssl from './_helpers/ssl.js';
+import db from './_helpers/db.js';
+import { EmailConfigFile } from './configuration/config.type.js';
 import { writeFileSync } from 'fs';
+import bcrypt from 'bcrypt';
+import { IAccountForm, Roles, isIAccountForm } from 'typesit';
+import etransfer from './_helpers/etransfer.js';
+import email from './_helpers/email.js';
 
 logger.info('Starting serveit');
 
@@ -135,21 +141,26 @@ app.get('/*', readyGuard, appGuard, (req, res) => {
 // global error handler
 app.use(errorHandler);
 
-// Start email backend
-// email.authorize().then(email.processTransfers).catch(console.error);
 
 // start server
 app.set('port', __envConfig.backend.port);
 app.set('setup_key', randomUUID());
 // const listener = app.listen(config.backend.port, );
 
+
 var httpServer = http.createServer(app);
 var httpsServer = https.createServer({key: ssl.key, cert: ssl.cert}, app);
 
 httpServer.listen(8080);
+
 const httpsListener = httpsServer.listen(__envConfig.backend.port, async () => {
   logger.info('Listening on ' + app.get('port'))
   if (await shouldSetup()){
     logger.info('Setup required, please use ' + __envConfig.backend.url + '/setup?setup_key=' + app.get('setup_key'))
   }
 });
+
+
+// Start processes
+etransfer.start()
+email.start()

@@ -245,5 +245,5 @@ class GmailProvider extends EmailProvider {
 }
 
 const emailConfig = getFileConfig(__configPath, 'email.json', (err, interval) => {}) as Promise<EmailConfigFile>
-const emailProcessor = new EmailProcessor(emailConfig);
-export default emailProcessor
+const email = new EmailProcessor(emailConfig);
+export default email
