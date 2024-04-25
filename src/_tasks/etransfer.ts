@@ -43,7 +43,7 @@ class EtransferTask extends Task {
     // just and idea I had so that there could be a system dashboard page that can stop this and other interval tasks
 
     constructor(config: { [key: string]: any; }) {
-        super("etransfer", 1000 * 60 * 5); // 5 minutes
+        super("etransfer", 1000 * 60 * 5);
         this.gmail = null;
         this.labelIds = null;
 

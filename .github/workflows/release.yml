@@ -29,7 +29,8 @@ jobs:
     - run: npm run build
     - run: rm -rf node_modules
     - run: rm -f package-lock.json
-    - run: zip -r backend_${GITHUB_REF_NAME}.zip ./dist package.json
+    # GITHUB_REF_NAME may contain /, which is not allowed in the zip file name so we replace it with _
+    - run: zip -r backend_${GITHUB_REF_NAME//\//_}.zip .
     # Now release
     - name: Release
       uses: ncipollo/release-action@v1

@@ -23,7 +23,7 @@ abstract class EmailProvider {
     abstract isConfigured() : boolean;
 }
 
-class EmailTask extends Task{
+class EmailTask extends Task {
     private provider: EmailProvider | null;
     private queue: EmailOptions[]
     
