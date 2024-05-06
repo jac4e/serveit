@@ -23,18 +23,19 @@ import bcrypt from 'bcrypt';
 import { IAccountForm, Roles, isIAccountForm } from 'typesit';
 import etransfer from './_tasks/etransfer.js';
 import email from './_tasks/email.js';
+import { tasks } from './_tasks/task.js';
 
 logger.info('Starting serveit');
 
 // Check if we are in development mode
 if (__envConfig.environment === 'development') {
-  logger.info('Development mode');
+  logger.warning('Development mode');
 
   // Generate random password for dev account
   // Protects somewhat against unauthorized access on a misconfigured server
   const password = randomUUID().substring(0, 16);
   // Log password
-  logger.info(`Dev account password: ${password}`);
+  logger.debug(`Dev account password: ${password}`);
 
   // Setup development environment
   //   dev account
@@ -98,7 +99,8 @@ app.use((req, res, next) => {
       origin: req.get('Origin'),
       userAgent: req.get('User-Agent'),
     }
-    logger.connection(JSON.stringify(data));
+    // logger.connection(JSON.stringify(data));
+    logger.log('info', JSON.stringify(data), {section: 'connection'});
     next();
 })
 
@@ -164,3 +166,7 @@ const httpsListener = httpsServer.listen(__envConfig.backend.port, async () => {
 // Start processes
 etransfer.start()
 email.start()
+
+
+// list tasks
+logger.debug(tasks)

@@ -26,7 +26,7 @@ import logger from "./logger.js";
 export default function errorHandler(err, req, res, next) {
     // Log error
     logger.error(err)
-    console.log(err)
+    // logger.debug(err)
     
     if (typeof (err) === 'string') {
         // custom application error

@@ -19,8 +19,8 @@ if (!existsSync(__envConfig.ssl.path)) {
     if (process.getuid === undefined || process.getuid === undefined) {
         logger.critical('Must use a posix os');
     }
-    // console.log((<any> process).getuid(), (<any> process).getgid())
-    chown(__envConfig.ssl.path, (<any> process).getuid(), (<any> process).getgid(), console.log)
+    // logger.debug((<any> process).getuid(), (<any> process).getgid())
+    chown(__envConfig.ssl.path, (<any> process).getuid(), (<any> process).getgid(), logger.debug)
 }
 
 class SSL {
@@ -114,7 +114,7 @@ class SSL {
             if (pems && pems.privkey && pems.cert && pems.chain) {
                 console.info('Success');
             }
-            //console.log(pems);
+            //logger.debug(pems);
         })
         .catch(function(e) {
             console.error('Big bad error:', e.code);

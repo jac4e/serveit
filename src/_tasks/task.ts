@@ -5,6 +5,7 @@
 //     start: () => void;
 //     stop: () => void;
 // }
+import logger from '../_helpers/logger.js';
 
 export const tasks: Task[] = [];
 
@@ -13,6 +14,8 @@ export default abstract class Task {
     private processTimer: NodeJS.Timeout | null = null;
     private interval: number; // 5 minutes
     public name: string;
+    public lastRun: Date | null = null;
+    public nextRun: Date | null = null;
     protected abstract taskHandler() : Promise<void>; // Runs every interval
     protected abstract startHandler() : void; // Runs before process is started
     protected abstract stopHandler() : void; // Runs before process is stopped
@@ -25,7 +28,15 @@ export default abstract class Task {
 
         tasks.push(this);
 
-        console.log(`Task ${name} created with interval ${interval}`);
+        // logger.debug(`Task ${name} created with interval ${interval}`);
+    }
+
+    log(level: string, message: string) {
+        logger.log(level, message, {
+                section: 'task',
+                label: this.name,
+            }
+        );
     }
     
     // isStopped() {
@@ -44,8 +55,9 @@ export default abstract class Task {
 
         try {
             await this.taskHandler();
+            this.lastRun = new Date();
         } catch (error) {
-            console.error(`Error running task ${this.name}: ${error}`);
+            this.log('error', `Error running task ${this.name}: ${error}`);
         }
         this.processTimer = setTimeout(this.task, this.interval);
     }
@@ -54,10 +66,11 @@ export default abstract class Task {
         try {
             this.startHandler();
         } catch (error) {
-            console.error(`Error starting task ${this.name}: ${error}`);
+            this.log('error', `Error starting task ${this.name}: ${error}`);
             return;
         }
         this.stopped = false;
+        this.nextRun = new Date(Date.now() + this.interval);
         this.processTimer = setTimeout(this.task, this.interval);
     }
 
@@ -65,16 +78,19 @@ export default abstract class Task {
         try {
             this.stopHandler();
         } catch (error) {
-            console.error(`Error stopping task ${this.name}: ${error}`);
+            this.log('error', `Error stopping task ${this.name}: ${error}`);
             return;
         }
         this.stopped = true;
+        this.nextRun = null;
         if (this.processTimer !== null) {
             clearTimeout(this.processTimer);
         }
     }
 
     protected async task() {
+        this.lastRun = new Date();
+
         if (this.stopped) {
             return;
         }
@@ -82,9 +98,10 @@ export default abstract class Task {
         try {
             await this.taskHandler();
         } catch (error) {
-            console.error(`Error running task ${this.name}: ${error}`);
+            this.log('error', `Error running task ${this.name}: ${error}`);
         }
-
+        
+        this.nextRun = new Date(Date.now() + this.interval);
         this.processTimer = setTimeout(this.task, this.interval);
     }
 }

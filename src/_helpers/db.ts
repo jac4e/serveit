@@ -1,5 +1,8 @@
 import mongoose from 'mongoose';
 import {__envConfig} from '../configuration/config.js';
+import logger from './logger.js';
+import 'winston-mongodb';
+import { transports } from 'winston';
 
 const srv_string = __envConfig.database.url === 'localhost' && __envConfig.database.port !== '' ? '' : '+srv';
 const account_string = __envConfig.database.user === '' ? '' : `${__envConfig.database.user}:${__envConfig.database.pass}@`;
@@ -15,12 +18,19 @@ db.on('', (error) => {
     logger.error(error)
 });
 db.once('open', function callback () {
+  // Add MongoDB connection to logger
+  logger.add(new transports.MongoDB({
+    db: Promise.resolve(db.getClient()),
+    options: { useUnifiedTopology: true },
+    collection: 'log',
+    level: 'info',
+  }));
+
   logger.info(`Mongodb connection is open to ${url_string}/${__envConfig.database.name}`);
 });
 
 import account from '../_models/account.model.js';
 import product from '../_models/product.model.js';
 import transaction from '../_models/transaction.model.js';
-import logger from './logger.js';
 
 export default { account, product, transaction };

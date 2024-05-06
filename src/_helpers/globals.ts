@@ -9,6 +9,7 @@ export const __frontendPath = join(__projectPath, 'app');
 export const __savePath = join(__projectPath, 'data');
 export const __configPath = join(__savePath, 'config');
 export const __templatePath = join(__backendPath, 'templates');
+export const __logPath = join(__savePath, 'logs');
 if (!existsSync(__savePath)) {
     mkdirSync(__savePath);
 }

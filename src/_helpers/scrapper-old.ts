@@ -29,6 +29,7 @@ import { google } from 'googleapis';
 import { gmail_v1 } from 'googleapis'
 import { OAuth2Client, GetTokenOptions } from 'google-auth-library';
 import { authenticate } from 'mailauth';
+import logger from './logger.js';
 
 export interface LocalAuthOptions {
     keyfilePath: string;
@@ -115,20 +116,20 @@ async function googleAuth(options: LocalAuthOptions): Promise<OAuth2Client> {
     });
     return new Promise((resolve, reject) => {
         const server = createServer(async (req, res) => {
-            console.log('request');
+            logger.debug('request');
             try {
-                console.log("begin try")
+                logger.debug("begin try")
                 if (req.url === undefined) {
                     reject(new Error("req.url must be defined"))
                     return;
                 }
-                console.log("req.url defined")
+                logger.debug("req.url defined")
                 const url = new URL(req.url, 'http://localhost:3000');
                 if (url.pathname !== redirectUri.pathname) {
                     res.end('Invalid callback URL');
                     return;
                 }
-                console.log("callback url defined")
+                logger.debug("callback url defined")
                 const searchParams = url.searchParams;
                 if (searchParams.has('error')) {
                     res.end('Authorization rejected.');
@@ -140,26 +141,26 @@ async function googleAuth(options: LocalAuthOptions): Promise<OAuth2Client> {
                     reject(new Error(sperrors));
                     return;
                 }
-                console.log("auth not rejected")
+                logger.debug("auth not rejected")
                 if (!searchParams.has('code')) {
                     res.end('No authentication code provided.');
                     reject(new Error('Cannot read authentication code.'));
                     return;
                 }
-                console.log("auth code provided")
+                logger.debug("auth code provided")
                 const code = searchParams.get('code');
                 if (code === null) {
                     reject(new Error("code must be defined"))
                     return;
                 }
-                console.log("code is defined")
+                logger.debug("code is defined")
                 const tokenOptions: GetTokenOptions = {
                     code: code,
                     redirect_uri: redirectUri.toString(),
                 };
                 const tokenResponse = await client.getToken(tokenOptions);
                 client.credentials = tokenResponse.tokens;
-                console.log("token got")
+                logger.debug("token got")
                 resolve(client);
                 res.end('Authentication successful! Please return to the console.');
             }
@@ -178,13 +179,13 @@ async function googleAuth(options: LocalAuthOptions): Promise<OAuth2Client> {
         else if (redirectUri.port !== '') {
             listenPort = Number(redirectUri.port);
         }
-        console.log(listenPort)
+        logger.debug(listenPort)
         server.listen(listenPort, () => {
             const address = server.address();
             if (isAddressInfo(address)) {
                 redirectUri.port = String(address.port);
             }
-            console.log(redirectUri)
+            logger.debug(redirectUri)
             const scopes = arrify(options.scopes || []);
             // open the browser to the authorize url to start the workflow
             const authorizeUrl = client.generateAuthUrl({
@@ -192,7 +193,7 @@ async function googleAuth(options: LocalAuthOptions): Promise<OAuth2Client> {
                 access_type: 'offline',
                 scope: scopes.join(' '),
             });
-            console.log(`Go to the following link in your browser: \n${authorizeUrl}\n`);
+            logger.debug(`Go to the following link in your browser: \n${authorizeUrl}\n`);
         });
         destroyer(server);
     });
@@ -203,31 +204,31 @@ async function googleAuth(options: LocalAuthOptions): Promise<OAuth2Client> {
  *
  */
 async function authorize() {
-    console.log("begin");
+    logger.debug("begin");
     let client = await loadSavedCredentialsIfExist();
-    console.log("test");
+    logger.debug("test");
     if (client) {
         return client;
     }
-    console.log("test2");
+    logger.debug("test2");
     client = await googleAuth({
         scopes: SCOPES,
         keyfilePath: CREDENTIALS_PATH,
     });
-    console.log("test3");
+    logger.debug("test3");
     if (client.credentials) {
         await saveCredentials(client);
     }
-    console.log("test4");
+    logger.debug("test4");
     return client;
 }
 
 async function processTransfers(auth) {
-    console.log("Begin mailbox processing")
+    logger.debug("Begin mailbox processing")
     const gmail = google.gmail({ version: 'v1', auth });
 
     // Get email labels 
-    console.log("Getting labels")
+    logger.debug("Getting labels")
     const resLabelList = await gmail.users.labels.list({
         userId: 'me',
     });
@@ -235,7 +236,7 @@ async function processTransfers(auth) {
     if (!labels || labels.length === 0) {
         throw 'no email labels found';
     }
-    console.log("Got labels");
+    logger.debug("Got labels");
     // Check if there is an incoming e-Transfers label
     const incoming = labels.filter(e => e.name === 'INCOMING_ETRANSFERS').length === 1 ? labels.filter(e => e.name === 'INCOMING_ETRANSFERS')[0] : undefined;
     if (incoming === undefined) {
@@ -259,7 +260,7 @@ async function processTransfers(auth) {
     // 
 
     async function loop() {
-        console.log('Fetching incoming etransfers');
+        logger.debug('Fetching incoming etransfers');
         // get all incoming potential etransfers
         if (incoming === undefined) {
             throw 'no "INCOMING_ETRANSFERS" label';
@@ -280,7 +281,7 @@ async function processTransfers(auth) {
 
             // helper function for logging and continuing if bad transfer was found
             function badMessage(emailMessage: gmail_v1.Schema$Message, errorMessage: string) {
-                console.log(`${emailMessage.id} could not be processed: ${errorMessage}. The email headers have been logged if it contained any.`)
+                logger.debug(`${emailMessage.id} could not be processed: ${errorMessage}. The email headers have been logged if it contained any.`)
                 // check if header folder exists
                 if (!existsSync(`./failed_messages/`)) {
                     mkdirSync(`./failed_messages/`, { recursive: true })
@@ -319,12 +320,12 @@ async function processTransfers(auth) {
             const message = messageReq.data
 
             // Authenticate the email
-            console.log(message)
+            logger.debug(message)
             if (message.raw === undefined || message.raw === null) {
                 throw 'no raw message';
             }
             const messageDecoded = Buffer.from(message.raw, 'base64').toString("utf8")
-            console.log(await authenticate(messageDecoded))
+            logger.debug(await authenticate(messageDecoded))
             throw "done"
 
             // process potential etransfer
@@ -395,9 +396,9 @@ async function processTransfers(auth) {
             
             // Get amount deposited
             // ^Hi UNIVERSITY OF ALBERTA ENGINEERING PHYSICS CLUB,\n\n.*\$(\d+\.\d+) \(CAD\)
-            // console.log(decodedBody)
+            // logger.debug(decodedBody)
             // let test = new RegExp("/^Hi UNIVERSITY OF ALBERTA ENGINEERING PHYSICS CLUB,\n\n.*\$(\d+\.\d+)/")
-            // console.log(decodedBody.match(test))
+            // logger.debug(decodedBody.match(test))
             // Get user id of depositee
 
             // move message to PROCESSED_ETRANSFERS

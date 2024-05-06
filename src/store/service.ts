@@ -29,22 +29,22 @@ async function createProduct(productParam: IProductForm): Promise<void> {
 }
 
 async function updateProductById(id: IProduct['id'], productParam: IProductForm): Promise<void> {
-    // console.log(id, productParam)
+    // logger.debug(id, productParam)
     let product = await Product.findById<IProductDocument>(id)
-    // console.log(product)
+    // logger.debug(product)
     if (!product) {
         throw `Product '${id}' does not exist`;
     }
     // idk which one to use
     product.set(productParam);
     // product.updateOne(productParam);
-    // console.log(Object.getOwnPropertyNames(product))
+    // logger.debug(Object.getOwnPropertyNames(product))
     // update product
     // for (const key in productParam) {
-    //     // console.log(key)
-    //     // console.log(product._doc.hasOwnProperty(key))
+    //     // logger.debug(key)
+    //     // logger.debug(product._doc.hasOwnProperty(key))
     //     if (product._doc.hasOwnProperty(key)) {
-    //         // console.log(product[key], productParam[key])
+    //         // logger.debug(product[key], productParam[key])
     //         product[key] = productParam[key]
     //     }
     // }
@@ -65,12 +65,12 @@ async function purchaseCart(payload: JwtPayload, cartSerialized: ICartSerialized
     }
 
     // check product count
-    // console.log("buying cart")
+    // logger.debug("buying cart")
     if (cartSerialized.length < 1) {
         throw "Cart is empty"
     }
     const products = await Product.find({'_id': { $in: cartSerialized.map((item: ICartItemSerialized): IProduct['id'] => item.id) } });
-    // console.log(products)
+    // logger.debug(products)
     // create cart object for invoice
     let cart = (await Product.find({'_id': { $in: cartSerialized.map((item: ICartItemSerialized): IProduct['id'] => item.id) } }).lean<IProduct[]>()).map(({stock, price, ...keepAttrs}: IProduct): ICartItem => ({...keepAttrs, price: BigInt(price), amount: BigInt(0), total: BigInt(0)}));
     
@@ -92,7 +92,7 @@ async function purchaseCart(payload: JwtPayload, cartSerialized: ICartSerialized
         sum += BigInt(cart[productIndex].total);
     }
 
-    // console.log(cart)
+    // logger.debug(cart)
     let transactionParams: ITransactionForm = {
         accountid: payload.sub,
         type: TransactionType.Debit,

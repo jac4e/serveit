@@ -146,11 +146,11 @@ async function create(accountParam: IAccountForm): Promise<void> {
 //   page
 // }) {
 //   //sortBy is object composed of {field: 'order'}
-//   console.log(type, query, sortBy, limit, page)
+//   logger.debug(type, query, sortBy, limit, page)
 //   let searchParam = {}
 //   searchParam[type] = query;
 //   let results = await Account.find(searchParam).sort(sortBy).skip(parseInt(page) * parseInt(limit)).limit(parseInt(limit))
-//   console.log(results)
+//   logger.debug(results)
 //   const count = await Account.countDocuments(query)
 //   return {
 //     results: results,
@@ -164,9 +164,9 @@ async function create(accountParam: IAccountForm): Promise<void> {
 
 async function getBalance(id: string): Promise<bigint> {
   // transaction based balance
-  // console.log(`id: ${id}`)
+  // logger.debug(`id: ${id}`)
   return await transaction.getBalanceByAccountId(id)
-  // console.log(res)
+  // logger.debug(res)
 }
 
 async function resetSession(id: string): Promise<void> {
@@ -180,24 +180,24 @@ async function resetSession(id: string): Promise<void> {
 
 async function getAll(): Promise<IAccount[]> {
   const accounts = await Account.find({}).lean<IAccount[]>();
-  // console.log(accounts)
+  // logger.debug(accounts)
   for (let index = 0; index < accounts.length; index++) {
     accounts[index].balance = await getBalance(accounts[index].id)
   }
-  // console.log(test);
+  // logger.debug(test);
   return accounts;
 }
 
 
 async function getById(id: string): Promise<IAccount> {
-  // console.log("getbyid",id)
+  // logger.debug("getbyid",id)
   const account = await Account.findById(id).lean<IAccount>();
   if (account === null) {
     throw "account not found"
   }
   const balance = await getBalance(id);
   account.balance = balance;
-  // console.log(test);
+  // logger.debug(test);
   return account;
 }
 
@@ -226,7 +226,7 @@ async function pay(amount: bigint, id: string): Promise<void> {
   // throws an error if payment cannot be made
   const account = await Account.findById(id);
   const balance = await getBalance(id);
-  // console.log('pay',amount,balance)
+  // logger.debug('pay',amount,balance)
   if (amount > balance) {
     throw 'Balance too low'
   }

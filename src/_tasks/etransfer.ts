@@ -47,7 +47,7 @@ class EtransferTask extends Task {
         this.gmail = null;
         this.labelIds = null;
 
-        console.log("EtransferProcessor initialized")
+        this.log('debug', "EtransferProcessor initialized")
 
         this.configure(config).then(() => {
             if (this.isConfigured()) {
@@ -57,11 +57,11 @@ class EtransferTask extends Task {
     }
 
     stopHandler() {
-        logger.info("Stopping EtransferProcessor")
+        this.log('info', "Stopping EtransferProcessor")
     }
 
     startHandler() {
-        logger.info("Starting EtransferProcessor")
+        this.log('info', "Starting EtransferProcessor")
     }
 
     // Trying out different method compared to setinterval
@@ -73,25 +73,25 @@ class EtransferTask extends Task {
     async taskHandler() {
         // Don't do anything if gmail is not configured
         if (this.gmail === null && this.labelIds === null) {
-            logger.warning("Etransfer Gmail Authentication not configured");
+            this.log('warning', "Etransfer Gmail Authentication not configured");
             return;
         }
 
         // Process incoming e-transfers
-        logger.info("Processing incoming e-transfers")
+        this.log('info', "Processing incoming e-transfers")
         const etransfers = await this.getEtransfers();
-        console.log("got etransfers")
-        console.log(`Incoming: ${etransfers.incoming.length}`)
+        this.log('debug', "got etransfers")
+        this.log('debug', `Incoming: ${etransfers.incoming.length}`)
         // Verify etransfers
         for (let i = 0; i < etransfers.incoming.length; i++) {
-            console.log(`Verifying etransfer ${etransfers.incoming[i].id}`)
+            this.log('debug', `Verifying etransfer ${etransfers.incoming[i].id}`)
             try {
                 const res = await this.verify(etransfers.incoming[i]);
                 if (!res) {
                     throw "Etransfer not verified"
                 }
             } catch (err) {
-                console.log(`Message ${etransfers.incoming[i].id} could not be verified: ${err}`)
+                this.log('debug', `Message ${etransfers.incoming[i].id} could not be verified: ${err}`)
                 // move message to unverified label
                 try {
                     await this.gmail!.users.messages.modify({
@@ -101,7 +101,7 @@ class EtransferTask extends Task {
                         removeLabelIds: [this.labelIds!.incoming]
                     } as gmail_v1.Params$Resource$Users$Messages$Modify);
                 } catch (err) {
-                    console.error(err);
+                    this.log('error', err);
                 }
                 continue;
             }
@@ -117,7 +117,7 @@ class EtransferTask extends Task {
                     removeLabelIds: [this.labelIds!.incoming]
                 } as gmail_v1.Params$Resource$Users$Messages$Modify);
             } catch (err) {
-                console.error(err);
+                this.log('error', err);
             }
 
             // Wait 0.25 second before verifying next etransfer
@@ -126,12 +126,12 @@ class EtransferTask extends Task {
     }
 
     private async configure(config: { [key: string]: any; }) {
-        console.log("Configuring etransfer processor")
+        this.log('debug', "Configuring etransfer processor")
         // wait for oauth2Client to be configured
         while (goauth.oauth2Client === null) {
             await new Promise(resolve => setTimeout(resolve, 100));
         }
-        console.log("Oauth2Client configured")
+        this.log('debug', "Oauth2Client configured")
         // Configure gmail
         this.gmail = google.gmail({
             version: 'v1',
@@ -142,14 +142,14 @@ class EtransferTask extends Task {
         try {
             await this.getLabels();
         } catch (err) {
-            console.error(err);
+            this.log('error', err);
             // Stop the incomingHandler
             this.gmail = null;
             this.labelIds = null;
-            logger.warn(`EtransferProcessor not configured properly: ${err}`)
+            this.log('warning', `EtransferProcessor not configured properly: ${err}`)
         }
 
-        logger.info("EtransferProcessor configured")
+        this.log('info', "EtransferProcessor configured")
     }
 
     isConfigured() {
@@ -158,11 +158,11 @@ class EtransferTask extends Task {
 
     private async getLabels() {
         if (this.gmail === null) {
-            logger.warning("Etransfer Gmail Authentication not configured");
+            this.log('warning', "Etransfer Gmail Authentication not configured");
             throw 'gmail not configured';
         }
 
-        console.log("Getting labels")
+        this.log('debug', "Getting labels")
         const resLabelList = await this.gmail.users.labels.list({
             userId: 'me',
         });
@@ -170,7 +170,7 @@ class EtransferTask extends Task {
         if (!labels || labels.length === 0) {
             throw 'no email labels found';
         }
-        console.log("Got labels");
+        this.log('debug', "Got labels");
         // Check if there is an incoming e-Transfers label
         const incoming = labels.filter(e => e.name === 'INCOMING_ETRANSFERS').length === 1 ? labels.filter(e => e.name === 'INCOMING_ETRANSFERS')[0] : undefined;
         if (incoming === undefined) {
@@ -203,11 +203,11 @@ class EtransferTask extends Task {
     async getEtransfers(): Promise<{ incoming: gmail_v1.Schema$Message[]; processing: gmail_v1.Schema$Message[]; }> {
         // Check if gmail is configured
         if (this.gmail === null && this.labelIds === null) {
-            logger.warning("Etransfer Gmail Authentication not configured");
+            this.log('warning', "Etransfer Gmail Authentication not configured");
             throw 'gmail not configured';
         }
 
-        console.log("Getting etransfers")
+        this.log('debug', "Getting etransfers")
 
         let etransfers: { incoming: gmail_v1.Schema$Message[]; processing: gmail_v1.Schema$Message[]; } = {
             incoming: [],
@@ -225,7 +225,7 @@ class EtransferTask extends Task {
         if (potentialIncoming === undefined || potentialIncoming === null) {
             throw 'no potential incoming etransfers';
         }
-        console.log(`Potential incoming: ${potentialIncoming.length}`)
+        this.log('debug', `Potential incoming: ${potentialIncoming.length}`)
 
         etransfers.incoming = potentialIncoming;
 
@@ -235,7 +235,7 @@ class EtransferTask extends Task {
     async verify(messageLean: gmail_v1.Schema$Message): Promise<boolean> {
         // Check if gmail is configured
         if (this.gmail === null && this.labelIds === null) {
-            logger.warning("Etransfer Gmail Authentication not configured");
+            this.log('warning', "Etransfer Gmail Authentication not configured");
             throw 'gmail not configured';
         }
 
@@ -248,7 +248,7 @@ class EtransferTask extends Task {
         const message = messageReq.data
 
         // Authenticate the email
-        // console.log(message)
+        // this.log('debug', message)
         if (message.raw === undefined || message.raw === null) {
             throw 'no raw message';
         }
@@ -283,7 +283,7 @@ class EtransferTask extends Task {
     async processEtransfer(messageLean: gmail_v1.Schema$Message) {
         // Check if gmail is configured
         if (this.gmail === null && this.labelIds === null) {
-            logger.warning("Etransfer Gmail Authentication not configured");
+            this.log('warning', "Etransfer Gmail Authentication not configured");
             throw 'gmail not configured';
         }
 
@@ -296,7 +296,7 @@ class EtransferTask extends Task {
 
         // Get X-PaymentKey from the email headers
         const paymentKey = messageReq.data.payload?.headers?.filter(e => e.name === 'X-PaymentKey')[0]?.value;
-        console.log(`PaymentKey: ${paymentKey}`)
+        this.log('debug', `PaymentKey: ${paymentKey}`)
 
         // Check if payload is defined
         if (messageReq.data.payload === undefined || messageReq.data.payload === null) {
@@ -334,8 +334,8 @@ class EtransferTask extends Task {
         // The JS path to the paragraph containing amount is: document.querySelector("body > table > tbody > tr > td > center > table > tbody > tr > td > table:nth-child(2) > tbody > tr > td > table > tbody > tr:nth-child(1) > td.text-pad > p:nth-child(3)")
         const amountParagraph = document.querySelector("body > table > tbody > tr > td > center > table > tbody > tr > td > table:nth-child(2) > tbody > tr > td > table > tbody > tr:nth-child(1) > td.text-pad > p:nth-child(3)")?.textContent;
        
-        console.log(`Message: ${message?.trim()}`)
-        console.log(`Amount: ${amountParagraph?.trim()}`)
+        this.log('debug', `Message: ${message?.trim()}`)
+        this.log('debug', `Amount: ${amountParagraph?.trim()}`)
 
         // Etransfer refill messages will have the following format (without the quotes): "REFILL:<accountid>"
 
@@ -346,12 +346,12 @@ class EtransferTask extends Task {
 
         const accountid = message?.toLowerCase().split('refill:')[1]?.trim();
 
-        console.log(`Accountid: ${accountid}`)
+        this.log('debug', `Accountid: ${accountid}`)
 
         // Get amount (should be between $ and (CAD)
         const amount: string = amountParagraph.split('$')[1].split('(CAD')[0]?.trim();
 
-        console.log(`Amount: ${amount}`)
+        this.log('debug', `Amount: ${amount}`)
 
         if (accountid === undefined || amount === undefined) {
             throw 'accountid or amount is undefined';
@@ -367,7 +367,7 @@ class EtransferTask extends Task {
         }
 
         Transaction.create(transaction).catch(err => {
-            console.error(err);
+            this.log('error', err);
         });
 
 

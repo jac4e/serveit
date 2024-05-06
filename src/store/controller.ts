@@ -27,9 +27,9 @@ function getProducts(req, res, next) {
 function createProduct(req, res, next) {
     // Check if body is an IProductForm type
     const data = req.body;
-    // console.log(data)
+    // logger.debug(data)
     if(!isIProductForm(data)){
-        // console.log(data)
+        // logger.debug(data)
         throw 'request body is of wrong type, must be IProductForm'
     }
     storeService.createProduct(data)
@@ -60,7 +60,7 @@ function deleteProductById(req, res, next) {
 }
 
 function purchase(req, res, next) {
-    // console.log("purchasing")
+    // logger.debug("purchasing")
     const data = req.body;
     if(!isICartSerialized(data)){
         throw 'request body is of wrong type, must be ICartSerialized'

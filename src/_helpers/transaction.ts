@@ -24,7 +24,8 @@ async function create(transactionParam: ITransactionForm): Promise<void> {
 
     transaction.set(transactionParam);
     await transaction.save()
-    logger.transaction(transaction.toJSON())
+    // logger.transaction(transaction.toJSON())
+    logger.log('info', `Transaction created: ${transaction.id}`, {section: 'transaction',})
 
     // Notify account of transaction
     // Temporary text based
@@ -50,7 +51,7 @@ async function getAll(): Promise<ITransaction[]> {
 
 
 async function getById(id: ITransaction['id']): Promise<ITransaction> {
-    // console.log(`get trans by id: ${id}`)
+    // logger.debug(`get trans by id: ${id}`)
     const transaction = await Transaction.findById(id).lean<ITransaction | null>();
     if (transaction === null){
         throw 'transaction not found'
@@ -95,7 +96,7 @@ async function getBalanceByAccountId(accountid: IAccount['id']): Promise<bigint>
 }
 
 async function getByAccountId(accountid: IAccount['id']): Promise<ITransaction[]> {
-    // console.log(`get trans by id: ${accountid}`);
+    // logger.debug(`get trans by id: ${accountid}`);
     return await Transaction.find({
         accountid: accountid
     }).sort({

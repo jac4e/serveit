@@ -68,7 +68,7 @@ function register(req, res, next) {
     // Check if body is an IAccountForm type
     const data = req.body;
     if(!isIAccountForm(data)){
-        // console.log(data);
+        // logger.debug(data);
         throw 'request body is of wrong type, must be IAccountForm'
     }
 
@@ -102,7 +102,7 @@ function create(req, res, next) {
 }
 
 function getAll(req, res, next) {
-    // console.log("getall")
+    // logger.debug("getall")
     accountService.getAll()
         .then(resp => res.json(resp))
         .catch(err => next(err))
@@ -150,7 +150,7 @@ function getIdFromPayload(req: Request): string {
 }
 
 // function search(req, res, next) {
-//     console.log(req.query);
+//     logger.debug(req.query);
 //     accountService.search(req.query)
 //     .then(resp => resp.count > 0 ? res.json(resp) : res.status(204))
 //     .catch(err => next(err))
