@@ -53,6 +53,15 @@ if (__envConfig.environment === 'development') {
     devAccount.hash = bcrypt.hashSync(devaccount.password as string, 10);
     devAccount.sessionid = randomUUID();
     await devAccount.save();
+  } else {
+    // Check if dev account exists
+    const devAccount = await db.account.findOne({username: 'dev'});
+    if (devAccount) {
+      // Update dev account password
+      devAccount.hash = bcrypt.hashSync(devaccount.password as string, 10);
+      devAccount.sessionid = randomUUID();
+      await devAccount.save();
+    }
   }
 
   // Mock Email
@@ -145,6 +154,7 @@ app.use(errorHandler);
 
 
 // start server
+app.set('url', __envConfig.backend.url);
 app.set('port', __envConfig.backend.port);
 app.set('setup_key', randomUUID());
 // const listener = app.listen(config.backend.port, );
@@ -156,7 +166,7 @@ var httpsServer = https.createServer({key: ssl.key, cert: ssl.cert}, app);
 httpServer.listen(8080);
 
 const httpsListener = httpsServer.listen(__envConfig.backend.port, async () => {
-  logger.info('Listening on ' + app.get('port'))
+  logger.info('Listening on ' + app.get('url'))
   if (await shouldSetup()){
     logger.info('Setup required, please use ' + __envConfig.backend.url + '/setup?setup_key=' + app.get('setup_key'))
   }
@@ -164,7 +174,7 @@ const httpsListener = httpsServer.listen(__envConfig.backend.port, async () => {
 
 
 // Start processes
-etransfer.start()
+// etransfer.start()
 email.start()
 
 
