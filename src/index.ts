@@ -48,20 +48,19 @@ if (__envConfig.environment === 'development') {
     password: password,
   }
   
-  if (await db.account.countDocuments() === 0) {
-    const devAccount = new db.account(devaccount);
+  // Check if dev account exists
+  const devAccount = await db.account.findOne({username: 'dev'});
+  if (devAccount) {
+    // Update dev account password
     devAccount.hash = bcrypt.hashSync(devaccount.password as string, 10);
     devAccount.sessionid = randomUUID();
     await devAccount.save();
   } else {
-    // Check if dev account exists
-    const devAccount = await db.account.findOne({username: 'dev'});
-    if (devAccount) {
-      // Update dev account password
-      devAccount.hash = bcrypt.hashSync(devaccount.password as string, 10);
-      devAccount.sessionid = randomUUID();
-      await devAccount.save();
-    }
+    // Create dev account
+    const devAccount = new db.account(devaccount);
+    devAccount.hash = bcrypt.hashSync(devaccount.password as string, 10);
+    devAccount.sessionid = randomUUID();
+    await devAccount.save();
   }
 
   // Mock Email
