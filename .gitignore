@@ -10,3 +10,4 @@ failed_messages
 *.log
 app/
 data/
+dump/

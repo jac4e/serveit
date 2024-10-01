@@ -8,3 +8,4 @@ services:
     user: "mongodb:mongodb"
     volumes:
       - ./mongodata:/data:Z
+      - ./dump:/dump:Z

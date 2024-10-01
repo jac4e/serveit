@@ -1,0 +1,27 @@
+services:
+  serveit:
+    build: .
+    environment:
+      - MONGO_URI=mongodb://database:27017
+    restart: unless-stopped
+    depends_on:
+      - database
+    command: ["npm run start"]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health/ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+  database:
+    # ports:
+    #   - "27017:27017"
+    image: mongo:6
+    restart: unless-stopped
+    user: "mongodb:mongodb"
+    volumes:
+      - ./mongodata:/data:Z
+    healthcheck:
+      test: ["CMD", "mongo", "--eval", "db.adminCommand('ping')"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
