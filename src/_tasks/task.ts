@@ -6,6 +6,7 @@
 //     stop: () => void;
 // }
 import logger from '../_helpers/logger.js';
+import { randomUUID } from 'crypto';
 
 export const tasks: Task[] = [];
 
