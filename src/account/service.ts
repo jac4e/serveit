@@ -62,6 +62,15 @@ async function auth(credentials: ICredentials): Promise<{ account: IAccount, tok
   }
 }
 
+async function matchPassword(id: string, password: string): Promise<boolean> {
+  const account = await Account.findById(id);
+  const match = await bcrypt.compare(password, account?.hash || "$2b$10$rQweXBgpHcRXB8nblwv7JO4URRkvC7GjMhNgDPJA35HNcG383YG8W")
+  if (account === null || match === false) {
+    throw `Auth error account or password is incorrect`
+  }
+  return true
+}
+
 // Private registration of verified accounts
 async function create(accountParam: IAccountForm): Promise<void> {
   // validate
@@ -233,6 +242,9 @@ async function pay(amount: bigint, id: string): Promise<void> {
 
 async function updateAccountById(id: string, accountParam: IAccountForm) {
 
+  // Remove password field from accountParam
+  delete accountParam.password;
+
   let account = await Account.findById<IAccountDocument>(id)
   if (account === null) {
       throw `Account '${id}' does not exist`;
@@ -246,6 +258,24 @@ async function updateAccountById(id: string, accountParam: IAccountForm) {
   account.set(accountParam);
   account.save()
 }
+
+async function updatePasswordById(id: string, password: string) {
+  let account = await Account.findById<IAccountDocument>(id)
+  if (account === null) {
+      throw `Account '${id}' does not exist`;
+  }
+
+  // Password validation
+  const result = zxcvbn(password, [account.username, account.firstName, account.lastName, account.email]);
+  if (result.score < 2) {
+    throw `New password is too weak: ${result.feedback.warning}`
+  }
+
+  account.hash = bcrypt.hashSync(password, saltRounds);
+  account.save()
+
+}
+
 
 async function deleteAccountById(id: IAccount['id']): Promise<void> {
     const account = await Account.findById<IAccountDocument>(id);
@@ -263,6 +293,7 @@ async function deleteAccountById(id: IAccount['id']): Promise<void> {
 
 export default {
   auth,
+  matchPassword,
   create,
   getAll,
   getById,
@@ -270,6 +301,7 @@ export default {
   resetSession,
   updateAccountById,
   deleteAccountById,
+  updatePasswordById,
   pay,
   verify
   // search

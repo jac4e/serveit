@@ -79,15 +79,42 @@ function register(req, res, next) {
 }
 
 function updateSelf(req, res, next) {
-    throw 'not implemented'
-    // const selfId = getIdFromPayload(req);
-    // const data = req.body;
-    // if(!isIAccountForm(data)){
-    //     throw 'request body is of wrong type, must be IAccountForm'
-    // }
-    // accountService.updateAccountById(selfId,data)
-    //     .then(() => res.json({}))
-    //     .catch(err => next(err))
+    const selfId = getIdFromPayload(req);
+    const type = req.body.type;
+    const accountForm = req.body.accountForm;
+    const currentPassword = req.body.currentPassword;
+
+
+    // Check if body is an IAccountForm type
+    if(!isIAccountForm(accountForm)){
+        throw 'AccountForm is of wrong type, must be IAccountForm'
+    }
+
+    // Check that current password is correct
+    if (currentPassword === undefined) {
+        throw 'currentPassword is required'
+    }
+    if (typeof currentPassword !== 'string') {
+        throw 'currentPassword must be a string'
+    }
+    accountService.matchPassword(selfId,currentPassword).then((match) => {
+        if (!match) {
+            throw 'Current password is incorrect'
+        }
+        if (type === 'password') {
+            if (accountForm.password === undefined) {
+                throw 'password is required in accountForm'
+            }
+            accountService.updatePasswordById(selfId,accountForm.password).then(() => {
+                accountService.resetSession(selfId).then(() => res.json({})).catch(err => next(err))
+            }).catch(err => next(err))
+        } else if (type === 'account') {
+            accountService.updateAccountById(selfId,accountForm).then(() => res.json({})).catch(err => next(err))
+        } else {
+            throw 'Invalid update type'
+        }
+    }).catch(err => next(err))
+
 }
 
 // Private routes
