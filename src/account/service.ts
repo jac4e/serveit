@@ -271,6 +271,11 @@ async function updatePasswordById(id: string, password: string) {
     throw `New password is too weak: ${result.feedback.warning}`
   }
 
+  // Notify user
+  const subject = `Spendit - Account Password Changed`;
+  const message = `Hi ${account.firstName},\nYour spendit account with the ID of ${account.id} has had its password change. If this was not initiated by you, please reach out to an admin as soon as possible.`
+  email.send(account.toObject(), subject, message)
+
   account.hash = bcrypt.hashSync(password, saltRounds);
   account.save()
 
