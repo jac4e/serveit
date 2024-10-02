@@ -4,6 +4,7 @@ import Guard from 'express-jwt-permissions';
 import transaction from '../_helpers/transaction.js';
 import { IAccountForm, isIAccountForm, ICredentials, isICredentials, Roles } from 'typesit';
 import accountService from './service.js';
+import { randomUUID } from 'crypto'
 
 const router = express.Router();
 const guard = Guard({
@@ -28,6 +29,7 @@ router.get('/:accountId/transaction', guard.check(Roles.Admin), getTransactions)
 router.put('/:accountId/verify/:role', guard.check(Roles.Admin), verify);
 router.delete('/:accountId', guard.check(Roles.Admin), deleteAccountById);
 router.put('/:accountId', guard.check(Roles.Admin), updateAccountById);
+router.put('/:accountId/resetPassword', guard.check(Roles.Admin), resetPasswordById);
 router.get('/', guard.check(Roles.Admin), getAll);
 // router.get('/search', search)
 
@@ -158,6 +160,15 @@ function updateAccountById(req, res, next) {
         .then(() => res.json({}))
         .catch(err => next(err))
 }
+
+function resetPasswordById(req, res, next) {
+    const newPassword = randomUUID().substring(0, 16);
+    console.log(`New password: ${newPassword}`);
+    accountService.updatePasswordById(req.params['accountId'],newPassword)
+        .then(resp => res.json({ password: newPassword }))
+        .catch(err => next(err))
+}
+
 function getBalance(req, res, next) {
     accountService.getBalance(req.params['accountId']).then(resp => res.json(resp)).catch(err => next(err));
 }
