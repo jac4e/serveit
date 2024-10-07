@@ -279,6 +279,8 @@ async function updatePasswordById(id: string, password: string) {
   account.hash = bcrypt.hashSync(password, saltRounds);
   account.save()
 
+  // Reset session
+  resetSession(id)
 }
 
 

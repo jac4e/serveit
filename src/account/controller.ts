@@ -107,9 +107,7 @@ function updateSelf(req, res, next) {
             if (accountForm.password === undefined) {
                 throw 'password is required in accountForm'
             }
-            accountService.updatePasswordById(selfId,accountForm.password).then(() => {
-                accountService.resetSession(selfId).then(() => res.json({})).catch(err => next(err))
-            }).catch(err => next(err))
+            accountService.updatePasswordById(selfId,accountForm.password).then(() => res.json({})).catch(err => next(err))
         } else if (type === 'account') {
             accountService.updateAccountById(selfId,accountForm).then(() => res.json({})).catch(err => next(err))
         } else {
