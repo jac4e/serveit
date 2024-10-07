@@ -48,6 +48,9 @@ class EtransferTask extends Task {
         this.labelIds = null;
 
         this.log('debug', "EtransferProcessor initialized")
+        this.configure(config).catch(err => {
+            this.log('error', err);
+        });
     }
 
     stopHandler() {
