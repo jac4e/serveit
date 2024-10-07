@@ -173,7 +173,7 @@ const httpsListener = httpsServer.listen(__envConfig.backend.port, async () => {
 
 
 // Start processes
-// etransfer.start()
+etransfer.start()
 email.start()
 
 

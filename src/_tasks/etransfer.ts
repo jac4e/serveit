@@ -43,17 +43,11 @@ class EtransferTask extends Task {
     // just and idea I had so that there could be a system dashboard page that can stop this and other interval tasks
 
     constructor(config: { [key: string]: any; }) {
-        super("etransfer", 1000 * 60 * 5);
+        super("etransfer", 1000 * 60 * 1);
         this.gmail = null;
         this.labelIds = null;
 
         this.log('debug', "EtransferProcessor initialized")
-
-        this.configure(config).then(() => {
-            if (this.isConfigured()) {
-                this.task();
-            }
-        });
     }
 
     stopHandler() {
@@ -340,11 +334,19 @@ class EtransferTask extends Task {
         // Etransfer refill messages will have the following format (without the quotes): "REFILL:<accountid>"
 
         // Check if message is a refill message
-        if (!message?.toLowerCase().includes('refill:')) {
-            return;
+        let accountid = undefined;
+        if ((message?.toLowerCase().includes('refill:'))) {
+            accountid = message?.toLowerCase().split('refill:')[1]?.trim();
         }
-
-        const accountid = message?.toLowerCase().split('refill:')[1]?.trim();
+        if ((message?.toLowerCase().includes('REFILL:'))) {
+            accountid = message?.toLowerCase().split('REFILL:')[1]?.trim();
+        }
+        if ((message?.toLowerCase().includes('refill&'))) {
+            accountid = message?.toLowerCase().split('refill&')[1]?.trim();
+        }
+        if ((message?.toLowerCase().includes('REFILL&'))) {
+            accountid = message?.toLowerCase().split('REFILL&')[1]?.trim();
+        }
 
         this.log('debug', `Accountid: ${accountid}`)
 
