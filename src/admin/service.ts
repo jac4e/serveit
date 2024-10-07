@@ -7,7 +7,9 @@ const Product = db.product
 
 async function createTransaction(transactionParam: ITransactionForm) {
     transactionParam.reason = `Admin: ${transactionParam.reason}`;
-    transaction.create(transactionParam);
+    return transaction.create(transactionParam).catch(err => {
+        throw err;
+    });
 }
 
 async function getAllTransactions() {

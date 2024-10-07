@@ -27,6 +27,11 @@ import { tasks } from './_tasks/task.js';
 
 logger.info('Starting serveit');
 
+// Catch all unhandled promise rejections
+process.on('unhandledRejection', (reason, promise) => {
+  logger.error(`Unhandled Rejection at: ${JSON.stringify(promise)} reason: ${reason}`);
+});
+
 // Check if we are in development mode
 if (__envConfig.environment === 'development') {
   logger.warning('Development mode');

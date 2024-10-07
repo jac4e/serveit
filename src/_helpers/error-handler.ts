@@ -25,7 +25,11 @@ import logger from "./logger.js";
 
 export default function errorHandler(err, req, res, next) {
     // Log error
-    logger.error(err)
+    if(err.stack !== undefined){
+        logger.error(err.stack);
+    } else {
+        logger.error(err);
+    }
     // logger.debug(err)
     
     if (typeof (err) === 'string') {
