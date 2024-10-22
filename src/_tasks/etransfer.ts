@@ -326,41 +326,72 @@ class EtransferTask extends Task {
         const document = dom.window.document;
 
         // THe JS path to the message body is: document.querySelector("body > table > tbody > tr > td > center > table > tbody > tr > td > table:nth-child(2) > tbody > tr > td > table > tbody > tr:nth-child(1) > td.text-pad > p:nth-child(6)")
-        const message = document.querySelector("body > table > tbody > tr > td > center > table > tbody > tr > td > table:nth-child(2) > tbody > tr > td > table > tbody > tr:nth-child(1) > td.text-pad > p:nth-child(6)")?.textContent;
-
+        const oldMessage = document.querySelector("body > table > tbody > tr > td > center > table > tbody > tr > td > table:nth-child(2) > tbody > tr > td > table > tbody > tr:nth-child(1) > td.text-pad > p:nth-child(6)")?.textContent;
+        // Get new template message
+        // JS Path: document.querySelector("body > table.body > tbody > tr > td > center > table > tbody > tr > td > table:nth-child(2) > tbody > tr > td > table > tbody > tr > td > table:nth-child(3) > tbody > tr:nth-child(3) > td > table.row.card > tbody > tr:nth-child(2) > td > table > tbody > tr:nth-child(3) > td > p.large-paragraph")
+        const newMessage = document.querySelector("body > table.body > tbody > tr > td > center > table > tbody > tr > td > table:nth-child(2) > tbody > tr > td > table > tbody > tr > td > table:nth-child(3) > tbody > tr:nth-child(3) > td > table.row.card > tbody > tr:nth-child(2) > td > table > tbody > tr:nth-child(3) > td > p.large-paragraph")?.textContent;
+        
+        const messages = [oldMessage, newMessage];
+        
         // The JS path to the paragraph containing amount is: document.querySelector("body > table > tbody > tr > td > center > table > tbody > tr > td > table:nth-child(2) > tbody > tr > td > table > tbody > tr:nth-child(1) > td.text-pad > p:nth-child(3)")
-        const amountParagraph = document.querySelector("body > table > tbody > tr > td > center > table > tbody > tr > td > table:nth-child(2) > tbody > tr > td > table > tbody > tr:nth-child(1) > td.text-pad > p:nth-child(3)")?.textContent;
-       
-        this.log('debug', `Message: ${message?.trim()}`)
-        this.log('debug', `Amount: ${amountParagraph?.trim()}`)
+        const oldAmountParagraph = document.querySelector("body > table > tbody > tr > td > center > table > tbody > tr > td > table:nth-child(2) > tbody > tr > td > table > tbody > tr:nth-child(1) > td.text-pad > p:nth-child(3)")?.textContent;
+    
+        const newAmountParagraph = document.querySelector("body > table.body > tbody > tr > td > center > table > tbody > tr > td > table:nth-child(2) > tbody > tr > td > table > tbody > tr > td > table:nth-child(3) > tbody > tr:nth-child(3) > td > table.row.card > tbody > tr:nth-child(2) > td > table > tbody > tr:nth-child(4) > td > table > tbody:nth-child(2) > tr:nth-child(2) > td:nth-child(3) > p.transfer-grid-item")?.textContent;
+
+        const amountParagraphs = oldAmountParagraph || newAmountParagraph;
+
 
         // Etransfer refill messages will have the following format (without the quotes): "REFILL:<accountid>"
-
         // Check if message is a refill message
-        let accountid = undefined;
-        if ((message?.toLowerCase().includes('refill:'))) {
-            accountid = message?.toLowerCase().split('refill:')[1]?.trim();
-        }
-        if ((message?.toLowerCase().includes('REFILL:'))) {
-            accountid = message?.toLowerCase().split('REFILL:')[1]?.trim();
-        }
-        if ((message?.toLowerCase().includes('refill&'))) {
-            accountid = message?.toLowerCase().split('refill&')[1]?.trim();
-        }
-        if ((message?.toLowerCase().includes('REFILL&'))) {
-            accountid = message?.toLowerCase().split('REFILL&')[1]?.trim();
+        let accountid: string | undefined = undefined;
+        let message: string | undefined = undefined;
+        for (const mesg in messages) {
+            if ((mesg?.toLowerCase().includes('refill:'))) {
+                accountid = mesg?.toLowerCase().split('refill:')[1]?.trim();
+                message = mesg;
+                break;
+            }
+            if ((mesg?.toLowerCase().includes('REFILL:'))) {
+                accountid = mesg?.toLowerCase().split('REFILL:')[1]?.trim();
+                message = mesg;
+                break;
+            }
+            if ((mesg?.toLowerCase().includes('refill&'))) {
+                accountid = mesg?.toLowerCase().split('refill&')[1]?.trim();
+                message = mesg;
+                break;
+            }
+            if ((mesg?.toLowerCase().includes('REFILL&'))) {
+                accountid = mesg?.toLowerCase().split('REFILL&')[1]?.trim();
+                message = mesg;
+                break;
+            }
         }
 
+        if (accountid === undefined) {
+            throw 'accountid is undefined';
+        }
+        if (message === undefined) {
+            throw 'message is undefined';
+        }
+
+        this.log('debug', `Message: ${message?.trim()}`)
         this.log('debug', `Accountid: ${accountid}`)
 
         // Get amount (should be between $ and (CAD)
-        const amount: string = amountParagraph.split('$')[1].split('(CAD')[0]?.trim();
+        // const amount: string = amountParagraph.split('$')[1].split('(CAD')[0]?.trim();
+        let amount: string | undefined = undefined;
+        for (const amountParagraph of amountParagraphs) {
+            if (amountParagraph?.includes('$')) {
+                amount = amountParagraph.split('$')[1].split('(CAD')[0]?.trim();
+                break;
+            }
+        }
+        if (amount === undefined) {
+            throw 'amount is undefined';
+        }
 
         this.log('debug', `Amount: ${amount}`)
-
-        if (accountid === undefined || amount === undefined) {
-            throw 'accountid or amount is undefined';
-        }
 
         // Create a new credit transaction for the account
         const transaction: ITransactionForm = {
