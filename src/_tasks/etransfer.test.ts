@@ -91,6 +91,8 @@ describe('parseEtransferEmailFromDOM', () => {
     });
 
     it('should correctly parse the accountid and amount from the e-transfer v1 email', async () => {
+        // eml files are downloaded from gmail using download message option
+        // Place in same folder as this file
         const document = await getEtransferEmailDocument(join(__dirname, 'etransfer.email.v1.eml'));
 
         // Call the function to test
@@ -104,6 +106,8 @@ describe('parseEtransferEmailFromDOM', () => {
         expect(result.amount).toMatch(/^\d+(\.\d{1,2})?$/);
     });
     it('should correctly parse the accountid and amount from the e-transfer v2 email', async () => {
+        // eml files are downloaded from gmail using download message option
+        // Place in same folder as this file
         const document = await getEtransferEmailDocument(join(__dirname, 'etransfer.email.v2.eml'));
 
         // Call the function to test
