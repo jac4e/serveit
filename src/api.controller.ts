@@ -2,6 +2,7 @@ import express from 'express';
 import accounts from './account/controller.js';
 import admin from './admin/controller.js';
 import store from './store/controller.js';
+import refills from './refill/controller.js';
 import jwtAuthGuard from './_helpers/jwt.js';
 import cors from 'cors'
 import { __pkg } from './configuration/config.js';
@@ -17,5 +18,6 @@ router.get('/status', (req, res) => {
 router.use('/admin', admin)
 router.use('/accounts', accounts)
 router.use('/store', store)
+router.use('/refills', refills)
 
 export default router;
