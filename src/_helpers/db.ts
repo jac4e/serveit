@@ -32,5 +32,6 @@ db.once('open', function callback () {
 import account from '../_models/account.model.js';
 import product from '../_models/product.model.js';
 import transaction from '../_models/transaction.model.js';
+import refill from '../_models/refill.model.js';
 
-export default { account, product, transaction };
+export default { account, product, transaction, refill };

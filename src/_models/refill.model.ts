@@ -24,7 +24,7 @@ const schema = new Schema<IRefillDocument, Model<IRefillDocument>>({
     },
     date_updated: {
         type: Date,
-        default: Date.now
+        default: Date.now,
     },
     status: {
         type: String,
@@ -34,8 +34,7 @@ const schema = new Schema<IRefillDocument, Model<IRefillDocument>>({
     },
     note: {
         type: String,
-        trim: true,
-        required: true
+        trim: true
     }
 });
 schema.set('toJSON', {
