@@ -47,7 +47,7 @@ const defaultTransports: transport[] = [
 ]
 
 addColors(logLevels.colors);
-console.log(process.env.LOG_LEVEL);
+console.log("ENV LOG_LEVEL:", process.env.LOG_LEVEL);
 
 const logger = createLogger({
   level: process.env.LOG_LEVEL ?? 'debug',

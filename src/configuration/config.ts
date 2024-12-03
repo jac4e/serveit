@@ -96,7 +96,6 @@ export function saveFileConfig(config: Config) {
 }
 
 // Setup package.json configuration
-console.log(__projectPath)
 const pkgConfig = JSON.parse(readFileSync(join(__projectPath, 'package.json'), 'utf-8'));
 
 export const __pkg = pkgConfig
