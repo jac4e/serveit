@@ -17,6 +17,8 @@ export function getDevelopmentConfig(processVariables: ProcessVariables ): Confi
         includeApp: processVariables.INCLUDE_APP === "true" ? true : false,
         includeGoogle: processVariables.INCLUDE_GOOGLE === "true" ? true : false,
         jwt: randomBytes(96).toString('hex'),
+        stripeSecret: processVariables.STRIPE_SECRET ?? "",
+        stripeWebhookSecret: processVariables.STRIPE_WEBHOOK_SECRET ?? ""
     }
     const ssl: SSLConfig = {
       selfSign: processVariables.SELFSIGN === "false" ? false : true,

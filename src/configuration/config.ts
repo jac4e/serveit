@@ -82,6 +82,12 @@ export function defineProcessVariables(processVariables: ProcessVariables): proc
     if(processVariables.BACKEND_PORT === undefined) {
         throw "Environment variable BACKEND_PORT must be defined";
     }
+    if(processVariables.STRIPE_SECRET === undefined) {
+        throw "Environment variable STRIPE_SECRET must be defined";
+    }
+    if(processVariables.STRIPE_WEBHOOK_SECRET === undefined) {
+        throw "Environment variable STRIPE_WEBHOOK_SECRET must be defined";
+    }
     return true
 }
 

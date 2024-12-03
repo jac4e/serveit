@@ -18,13 +18,18 @@ const schema = new Schema<IRefillDocument, Model<IRefillDocument>>({
         trim: true,
         required: true
     },
-    date_created: {
+    dateCreated: {
         type: Date,
         default: Date.now
     },
-    date_updated: {
+    dateUpdated: {
         type: Date,
         default: Date.now,
+    },
+    reference: {
+        type: String,
+        trim: true,
+        unique: true
     },
     status: {
         type: String,
