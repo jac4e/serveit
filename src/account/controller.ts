@@ -2,9 +2,10 @@ import express, { NextFunction, request, Response } from 'express';
 import expressJwt, { Request } from 'express-jwt';
 import Guard from 'express-jwt-permissions';
 import transaction from '../_helpers/transaction.js';
-import { IAccountForm, isIAccountForm, ICredentials, isICredentials, Roles } from 'typesit';
+import { IAccountForm, isIAccountForm, ICredentials, isICredentials, Roles, isIRefillForm, IRefillForm, RefillMethods } from 'typesit';
 import accountService from './service.js';
 import { randomUUID } from 'crypto'
+import refillService from '../refill/service.js';
 
 const router = express.Router();
 const guard = Guard({
@@ -13,15 +14,22 @@ const guard = Guard({
 });
 
 // Routes
-router.post('/auth', auth);
 
+// Public routes
+router.post('/auth', auth);
+router.post('/register', register);
+
+// User available routes
 router.get('/self', getSelf);
+router.put('/self', updateSelf);
+router.get('/self/refill', getSelfRefillHistory);
+router.post('/self/refill', createSelfRefill);
+router.delete('/self/refill/:refillId', cancelRefill);
 router.get('/self/resetSession', resetSessionSelf);
 router.get('/self/balance', getSelfBalance);
 router.get('/self/transactions', getSelfTransactions);
-router.put('/self', updateSelf);
 
-router.post('/register', register);
+// Private routes
 router.post('/create', guard.check(Roles.Admin), create);
 router.get('/:accountId/resetSession', guard.check(Roles.Admin), resetSession);
 router.get('/:accountId/balance', guard.check(Roles.Admin), getBalance);
@@ -41,6 +49,20 @@ function auth(req, res, next) {
         throw 'request body is of wrong type, must be ICredentials'
     }
     accountService.auth(data).then((resp) => res.json(resp)).catch(err => next(err));
+}
+
+function register(req, res, next) {
+    // Check if body is an IAccountForm type
+    const data = req.body;
+    if(!isIAccountForm(data)){
+        // logger.debug(data);
+        throw 'request body is of wrong type, must be IAccountForm'
+    }
+
+    // registration form initiated creation
+    data.role = Roles.Unverified;
+
+    accountService.create(data).then(() => res.json({})).catch(err => next(err))
 }
 
 // User available routes
@@ -64,20 +86,6 @@ function getSelfBalance(req, res, next) {
 function getSelfTransactions(req, res, next) {
     const selfId = getIdFromPayload(req);
     transaction.getByAccountId(selfId).then(resp => res.json(resp)).catch(err => next(err));
-}
-
-function register(req, res, next) {
-    // Check if body is an IAccountForm type
-    const data = req.body;
-    if(!isIAccountForm(data)){
-        // logger.debug(data);
-        throw 'request body is of wrong type, must be IAccountForm'
-    }
-
-    // registration form initiated creation
-    data.role = Roles.Unverified;
-
-    accountService.create(data).then(() => res.json({})).catch(err => next(err))
 }
 
 function updateSelf(req, res, next) {
@@ -115,6 +123,32 @@ function updateSelf(req, res, next) {
         }
     }).catch(err => next(err))
 
+}
+
+function getSelfRefillHistory(req, res, next) {
+    const selfId = getIdFromPayload(req);
+    refillService.getRefillHistory(selfId).then(resp => res.json(resp)).catch(err => next(err));
+}
+
+function createSelfRefill(req, res, next) {
+    const selfId = getIdFromPayload(req);
+
+    const data = {
+        ...req.body,
+        account: selfId
+    }
+    if (!isIRefillForm(data)) {
+        throw 'request body is of wrong type, must be IRefillForm'
+    }
+    refillService.create(data).then((resp) => res.json(resp)).catch(err => next(err));
+
+}
+
+function cancelRefill(req, res, next) {
+    const selfId = getIdFromPayload(req);
+    const refillId = req.params.refillId;
+    const note = 'User: Refill cancelled';
+    refillService.cancelRefill(refillId, {note: note}).then(() => res.json({})).catch(err => next(err));
 }
 
 // Private routes
@@ -161,7 +195,6 @@ function updateAccountById(req, res, next) {
 
 function resetPasswordById(req, res, next) {
     const newPassword = randomUUID().substring(0, 16);
-    console.log(`New password: ${newPassword}`);
     accountService.updatePasswordById(req.params['accountId'],newPassword)
         .then(resp => res.json({ password: newPassword }))
         .catch(err => next(err))
