@@ -10,8 +10,8 @@ type Task = {
 }
 
 // Copy the function to test from src/_tasks/etransfer.ts to avoid importing
-function parseEtransferEmailFromDOM(document: any, log: Task["log"]): { accountid: string; amount: string; } {
-    let accountid: string | undefined = undefined;
+function parseEtransferEmailFromDOM(document: any, log: Task["log"]): { refillid: string; amount: string; } {
+    let refillid: string | undefined = undefined;
     let amount: string | undefined = undefined;
 
     // Find element that contains REFILL using xpath
@@ -23,7 +23,7 @@ function parseEtransferEmailFromDOM(document: any, log: Task["log"]): { accounti
         throw "message and amount text are the same"
     }
 
-    // Parse message to get accountid
+    // Parse message to get refillid
     const delims = [
         ':',
         '&',
@@ -31,12 +31,12 @@ function parseEtransferEmailFromDOM(document: any, log: Task["log"]): { accounti
 
     for (const delim of delims) {
         if ((message.toLowerCase().includes(`refill${delim}`))) {
-            accountid = message.toLowerCase().split(`refill${delim}`)[1]?.trim();
+            refillid = message.toLowerCase().split(`refill${delim}`)[1]?.trim();
         }
     }
 
-    if (accountid === undefined && accountid !== ""){
-        throw 'accountid is undefined';
+    if (refillid === undefined && refillid !== ""){
+        throw 'refillid is undefined';
     }
 
     // Parse amountText to get amount
@@ -46,7 +46,7 @@ function parseEtransferEmailFromDOM(document: any, log: Task["log"]): { accounti
         throw 'amount is undefined';
     }
 
-    return { accountid: accountid, amount: amount };
+    return { refillid: refillid, amount: amount };
 }
 
 function getEtransferEmailDocument(emlPath: string): Promise<string> {
@@ -90,7 +90,7 @@ describe('parseEtransferEmailFromDOM', () => {
         log = jest.fn();
     });
 
-    it('should correctly parse the accountid and amount from the e-transfer v1 email', async () => {
+    it('should correctly parse the refillid and amount from the e-transfer v1 email', async () => {
         // eml files are downloaded from gmail using download message option
         // Place in same folder as this file
         const document = await getEtransferEmailDocument(join(__dirname, 'etransfer.email.v1.eml'));
@@ -100,12 +100,12 @@ describe('parseEtransferEmailFromDOM', () => {
 
         // Validate the result
         // Dont want to store account ID's in here 
-        // Verify accountid is a 24 character string only containing numbers and letters
+        // Verify refillid is a 24 character string only containing numbers and letters
         // Verify amount is some correct dollar amount X+.XX
-        expect(result.accountid).toMatch(/^[a-zA-Z0-9]{24}$/);
+        expect(result.refillid).toMatch(/^[a-zA-Z0-9]{24}$/);
         expect(result.amount).toMatch(/^\d+(\.\d{1,2})?$/);
     });
-    it('should correctly parse the accountid and amount from the e-transfer v2 email', async () => {
+    it('should correctly parse the refillid and amount from the e-transfer v2 email', async () => {
         // eml files are downloaded from gmail using download message option
         // Place in same folder as this file
         const document = await getEtransferEmailDocument(join(__dirname, 'etransfer.email.v2.eml'));
@@ -114,7 +114,7 @@ describe('parseEtransferEmailFromDOM', () => {
         const result = parseEtransferEmailFromDOM(document, log);
 
         // Validate the result
-        expect(result.accountid).toMatch(/^[a-zA-Z0-9]{24}$/);
+        expect(result.refillid).toMatch(/^[a-zA-Z0-9]{24}$/);
         expect(result.amount).toMatch(/^\d+(\.\d{1,2})?$/);
     });
 });

@@ -1,15 +1,16 @@
-import goauth from "../_helpers/goauth";
-import Task from "./task";
+import goauth from "../_helpers/goauth.js";
+import Task from "./task.js";
 import { Auth, gmail_v1, google } from "googleapis";
 import { authenticate } from 'mailauth';
-import logger from '../_helpers/logger';
+import logger from '../_helpers/logger.js';
 import jsdom from 'jsdom';
 import e from "express";
-import Transaction from "../_helpers/transaction";
+import Transaction from "../_helpers/transaction.js";
 import { ITransactionForm, TransactionType } from "typesit";
-import { __savePath } from "../_helpers/globals";
+import { __savePath } from "../_helpers/globals.js";
 import { join, dirname } from 'path';
 import { existsSync, mkdirSync, readFileSync, statSync, readdirSync, writeFileSync } from 'fs';
+import refillService from '../refill/service.js';
 
 
 // Helper functions
@@ -30,8 +31,8 @@ function urlSafeBase64Decode(base64: string): string {
     return Buffer.from(base64, 'base64').toString('utf8');
 }
 
-function parseEtransferEmailFromDOM(document: any, log: Task["log"]): { accountid: string; amount: string; } {
-    let accountid: string | undefined = undefined;
+function parseEtransferEmailFromDOM(document: any, log: Task["log"]): { refillid: string; amount: string; } {
+    let refillid: string | undefined = undefined;
     let amount: string | undefined = undefined;
 
     // Find element that contains REFILL using xpath
@@ -44,7 +45,7 @@ function parseEtransferEmailFromDOM(document: any, log: Task["log"]): { accounti
         throw "message and amount text are the same"
     }
 
-    // Parse message to get accountid
+    // Parse message to get refillid
     const delims = [
         ':',
         '&',
@@ -52,14 +53,14 @@ function parseEtransferEmailFromDOM(document: any, log: Task["log"]): { accounti
 
     for (const delim of delims) {
         if ((message.toLowerCase().includes(`refill${delim}`))) {
-            accountid = message.toLowerCase().split(`refill${delim}`)[1]?.trim();
+            refillid = message.toLowerCase().split(`refill${delim}`)[1]?.trim();
         }
     }
 
-    if (accountid === undefined && accountid !== ""){
-        throw 'accountid is undefined';
+    if (refillid === undefined && refillid !== ""){
+        throw 'refillid is undefined';
     }
-    log('debug', `accountid: ${accountid}`);
+    log('debug', `refillid: ${refillid}`);
 
     // Parse amountText to get amount
     amount = amountText.split('$')[1].split('(CAD')[0]?.trim();
@@ -69,7 +70,7 @@ function parseEtransferEmailFromDOM(document: any, log: Task["log"]): { accounti
     }
     log('debug', `amount: ${amount}`);
 
-    return { accountid: accountid, amount: amount };
+    return { refillid: refillid, amount: amount };
 }
 
 
@@ -335,6 +336,10 @@ class EtransferTask extends Task {
 
         // Get X-PaymentKey from the email headers
         const paymentKey = messageReq.data.payload?.headers?.filter(e => e.name === 'X-PaymentKey')[0]?.value;
+        // Check if paymentKey is defined
+        if (paymentKey === undefined || paymentKey === null) {
+            throw 'no payment key';
+        }
         this.log('debug', `PaymentKey: ${paymentKey}`)
 
         // Check if payload is defined
@@ -368,24 +373,13 @@ class EtransferTask extends Task {
         const document = dom.window.document;
 
         // Parse the etransfer email
-        const { accountid, amount } = parseEtransferEmailFromDOM(document, this.log.bind(this));
+        const { refillid, amount } = parseEtransferEmailFromDOM(document, this.log.bind(this));
 
-        // Create a new credit transaction for the account
-        const transaction: ITransactionForm = {
-            accountid: accountid,
-            type: TransactionType.Credit,
-            total: amount.replace('.', ''),
-            reason: 'Auto: Etransfer Refill from ' + paymentKey,
-            products: [],
-        }
-
-        Transaction.create(transaction).catch(err => {
+        // Complete the etransfer
+        const note = 'Auto-Etransfer: Refill completed';
+        refillService.completeRefill(refillid, BigInt(amount), paymentKey, note).catch(err => {
             this.log('error', err);
         });
-
-
-        // Exit node for testing
-        // process.exit(0)
     }
 }
 
