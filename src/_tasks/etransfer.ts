@@ -377,7 +377,7 @@ class EtransferTask extends Task {
 
         // Complete the etransfer
         const note = 'Auto-Etransfer: Refill completed';
-        refillService.completeRefill(refillid, BigInt(amount), paymentKey, note).catch(err => {
+        refillService.completeRefill(refillid, {amount: BigInt(amount), reference: paymentKey, note: note}).catch(err => {
             this.log('error', err);
         });
     }
