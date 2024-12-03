@@ -23,7 +23,7 @@ async function getRefillHistory(id: string): Promise<IRefill[]> {
 async function create(data: IRefillForm): Promise<IRefill> {
     // Check amount is valid
     if (BigInt(data.amount) < 50n && data.method !== RefillMethods.Cash) {
-        throw 'Minimum refill amount is 50';
+        throw 'Minimum refill amount for non-cash transactions is 50';
     }
 
     const refill = new Refill(data);
