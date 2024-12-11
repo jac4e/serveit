@@ -4,11 +4,10 @@ import logger from './logger.js';
 import 'winston-mongodb';
 import { transports } from 'winston';
 
-const srv_string = __envConfig.database.url === 'localhost' && __envConfig.database.port !== '' ? '' : '+srv';
 const account_string = __envConfig.database.user === '' ? '' : `${__envConfig.database.user}:${__envConfig.database.pass}@`;
 const url_string = __envConfig.database.port === '' ? __envConfig.database.url : `${__envConfig.database.url}:${__envConfig.database.port}`;
 
-mongoose.connect(`mongodb${srv_string}://${account_string}${url_string}/${__envConfig.database.name}?retryWrites=true&w=majority`);
+mongoose.connect(`mongodb://${account_string}${url_string}/${__envConfig.database.name}?retryWrites=true&w=majority`);
 
 const db = mongoose.connection;
 db.on('error', (error) => {
