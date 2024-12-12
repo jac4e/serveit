@@ -33,6 +33,8 @@ async function create(data: IRefillForm): Promise<IRefill> {
 
     // Payment logic
     if (refill.method === RefillMethods.Stripe) {
+        refill.cost = BigInt(Math.round((Number(refill.amount) + 30) / (1 - 0.029)));
+
         // Create stripe checkout session
         const session = await stripe.checkout.sessions.create({
             metadata: {
@@ -42,7 +44,7 @@ async function create(data: IRefillForm): Promise<IRefill> {
                 price_data: {
                     currency: 'cad',
                     product_data: {
-                        name: 'Phrdyge Account Refill',
+                        name: 'Phrydge Account Refill',
                     },
                     unit_amount: Number(refill.amount),
                 },
@@ -55,7 +57,7 @@ async function create(data: IRefillForm): Promise<IRefill> {
                         name: 'Online Service Fee',
                     },
                     // 2.9% + 30 cents
-                    unit_amount: Math.ceil((Number(refill.amount) + 30) / (1 - 0.029)) -  Number(refill.amount),
+                    unit_amount: Number(refill.cost) -  Number(refill.amount),
                 },
                 quantity: 1,
             }
@@ -67,11 +69,14 @@ async function create(data: IRefillForm): Promise<IRefill> {
         });
         refill.reference = session.id;
     } else if (refill.method === RefillMethods.Etransfer) {
+        refill.cost = refill.amount;
         // Etransfer payment logic
         refill.reference = randomUUID();
     } else if (refill.method === RefillMethods.Cash) {
+        refill.cost = refill.amount;
         refill.reference = randomUUID();
     } else if (refill.method === RefillMethods.Card) {
+        refill.cost = BigInt(Math.round((Number(refill.amount) + 30) / (1 - 0.027)));
         refill.reference = randomUUID();
     }
 
@@ -160,7 +165,7 @@ async function completeRefill(refillid: string, {amount, reference, note}: {amou
         accountid: refill.account,
         type: TransactionType.Credit,
         total: String(refill.amount).replace('.', ''),
-        reason: `${refill.method} Refill: ${reference}`,
+        reason: `${refill.method} Refill: ${reference || refill.reference}`,
         products: [],
     }
 
