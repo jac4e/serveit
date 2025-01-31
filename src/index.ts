@@ -14,7 +14,7 @@ import bodyParser from 'body-parser';
 import logger from './_helpers/logger.js';
 import https from 'https';
 import http from 'http';
-import { __configPath, __frontendPath } from './_helpers/globals.js';
+import { __configPath, __frontendPath, __savePath } from './_helpers/globals.js';
 import ssl from './_helpers/ssl.js';
 import db from './_helpers/db.js';
 import { EmailConfigFile } from './configuration/config.type.js';

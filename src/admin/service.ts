@@ -1,6 +1,6 @@
 import db from '../_helpers/db.js';
 import transaction from '../_helpers/transaction.js';
-import { ITransaction, ITransactionForm, Roles, TransactionType, IAccountStats, IFinanceStats, IInventoryStats, IRefillStats, IStoreStats, ITaskLean, ITransactionStats } from 'typesit';
+import { ITransaction, ITransactionForm, Roles, TransactionType, IAccountStats, IFinanceStats, IInventoryStats, IRefillStats, IStoreStats, ITaskLean, ITransactionStats, RefillStatus, StatsDateRange } from 'typesit';
 import { tasks } from '../_tasks/task.js';
 
 const Account = db.account
@@ -20,14 +20,31 @@ async function getAllTransactions() {
 }
 
 // Statistics functions
-async function getFinanceStats(): Promise<IFinanceStats> {
+async function getFinanceStats(dateOption: StatsDateRange): Promise<IFinanceStats> {
+    // Turn dateOption into a date range
+    const endDate = new Date();
+    let startDate = new Date();
+    if (dateOption === StatsDateRange.Day) {
+        startDate.setDate(endDate.getDate() - 1);
+    } else if (dateOption === StatsDateRange.Week) {
+        startDate.setDate(endDate.getDate() - 7);
+    } else if (dateOption === StatsDateRange.Month) {
+        startDate.setMonth(endDate.getMonth() - 1);
+    } else if (dateOption === StatsDateRange.Quarter) {
+        startDate.setMonth(endDate.getMonth() - 3);
+    } else if (dateOption === StatsDateRange.Year) {
+        startDate.setFullYear(endDate.getFullYear() - 1);
+    }
+
+    const dateQuery = dateOption === StatsDateRange.All ? {} : { date: { $gte: startDate, $lt: endDate } };
+
     // Generate finance stats
     // Total credit
-    const totalCredit = await Transaction.find({ type: TransactionType.Credit }).then(transactions => {
+    const totalCredit = await Transaction.find({ type: TransactionType.Credit, ...dateQuery }).then(transactions => {
         return transactions.reduce((acc, transaction) => acc + BigInt(transaction.total), 0n);
     });
     // Revenue
-    const revenue = await Transaction.find({ type: TransactionType.Debit }).then(transactions => {
+    const revenue = await Transaction.find({ type: TransactionType.Debit, ...dateQuery }).then(transactions => {
         return transactions.reduce((acc, transaction) => acc + BigInt(transaction.total), 0n);
     });
     const creditBalance = totalCredit - revenue;
@@ -83,13 +100,13 @@ async function getAccountStats(): Promise<IAccountStats> {
 async function getRefillStats(): Promise<IRefillStats> {
     // Generate refill stats
     // Pending refills
-    const pending = await Refill.countDocuments({ status: 'Pending' });
+    const pending = await Refill.countDocuments({ status: RefillStatus.Pending });
     // Complete refills
-    const complete = await Refill.countDocuments({ status: 'Complete' });
+    const complete = await Refill.countDocuments({ status: RefillStatus.Complete });
     // Cancelled refills
-    const cancelled = await Refill.countDocuments({ status: 'Cancelled' });
+    const cancelled = await Refill.countDocuments({ status: RefillStatus.Cancelled });
     // Failed refills
-    const failed = await Refill.countDocuments({ status: 'Failed' });
+    const failed = await Refill.countDocuments({ status: RefillStatus.Failed });
     const total = await Refill.countDocuments();
     return { pending: pending, complete: complete, cancelled: cancelled, failed: failed, total: total };
 }
@@ -103,7 +120,8 @@ async function getStoreStats(): Promise<IStoreStats> {
     // Ranking of products most sold to least sold
     // First get all products and make array of object {name: string, amount: number}
     const products = await Product.find();
-    const validTransactions = await Transaction.find({ type: TransactionType.Debit, products: { $exists: true } });
+    // valid transaction is a debit transaction with a non empty product array
+    const validTransactions = await Transaction.find({ type: TransactionType.Debit, products: { $not: { $size: 0 } } });
     const productMap: Record<string, number> = {};
     // Fill productMap with all products, amount 0 for now
     products.forEach((product) => {

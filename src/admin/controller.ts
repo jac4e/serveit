@@ -17,7 +17,7 @@ router.post('/transactions', createTransactions);
 // Statistics routes needed
 // router.get('/stats', getStats);
 // Finance stats
-router.get('/stats/finance', getFinanceStats);
+router.get('/stats/finance/:dateOption', getFinanceStats);
 // Inventory stats
 router.get('/stats/inventory', getInventoryStats);
 // Transaction stats
@@ -50,7 +50,8 @@ function createTransactions(req, res, next) {
 
 // statistics functions
 function getFinanceStats(req, res, next) {
-    adminService.getFinanceStats().then(resp => res.json(resp)).catch(err => next(err))
+    const dateOption = req.params.dateOption;
+    adminService.getFinanceStats(dateOption).then(resp => res.json(resp)).catch(err => next(err))
 }
 
 function getInventoryStats(req, res, next) {
