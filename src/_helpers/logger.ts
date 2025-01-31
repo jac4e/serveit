@@ -81,7 +81,7 @@ logger.add(new transports.Console({
       // Create section label string
       let sectionLabel = '';
       if (section || label) {
-        sectionLabel = section;
+        sectionLabel = section as string;
         if (label) {
           sectionLabel += `:${label}`;
         }
