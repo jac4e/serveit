@@ -11,3 +11,4 @@ failed_messages
 app/
 data/
 src/_tasks/*.eml
+mongodata

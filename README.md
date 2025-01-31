@@ -36,6 +36,8 @@ Before the server can be used in production, the following enivronment variables
 - BACKEND_DOMAIN (domain to run backend server on)
 - SELFSIGN (true/false) [whether you need a ssl certificate for the backend server or if you are providing one yourself]
 - CF_TOKEN (cloudflare api token) [if set and domain dns is managed by cloudflare, the ssl certificate will be a proper certificate using a certificate authority and not an insecure self-signed one]
+- STRIPE_SECRET (stripe secret key)
+- STRIPE_WEBHOOK_SECRET (stripe webhook secret key)
 
 For example, a typical enviroment variables for production would look like:
 
@@ -48,6 +50,8 @@ BACKEND_PORT=3030 #Port to run backend server on
 BACKEND_DOMAIN=phrydge.engphys.com #Domain to run backend server on
 SELFSIGN=true #Make backend manage ssl certificate
 CF_TOKEN=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX #Cloudflare api token for valid ssl certificate generation
+STRIPE_SECRET=sk_test_XXXXXXXX
+STRIPE_WEB=whsec_XXXXXXXX
 ```
 
 ### First Run
