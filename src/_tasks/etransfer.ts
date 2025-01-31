@@ -35,8 +35,8 @@ function parseEtransferEmailFromDOM(document: any, log: Task["log"]): { accounti
     let amount: string | undefined = undefined;
 
     // Find element that contains REFILL using xpath
-    const message = document.evaluate("//p[contains(text(), 'REFILL')]", document, null, 9, null).singleNodeValue.textContent.trim();
-    log('debug', `Message: ${message}`);
+    const messageXpath = "//p[contains(translate(text(), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), 'refill')]";
+    const message = document.evaluate(messageXpath, document, null, 9, null).singleNodeValue.textContent.trim();
     const amountText = document.evaluate("//*[contains(text(), '$')]", document, null, 9, null).singleNodeValue.textContent.trim();
 
     // Make sure both are not the same one to prevent amounts being places in the message
@@ -79,6 +79,7 @@ class EtransferTask extends Task {
         incoming: string;
         processed: string; 
         unverified: string;
+        unprocessed: string;
     } | null;
 
     // For future use to potentially stop the process
@@ -124,6 +125,8 @@ class EtransferTask extends Task {
         // Verify etransfers
         for (let i = 0; i < etransfers.incoming.length; i++) {
             this.log('debug', `Verifying etransfer ${etransfers.incoming[i].id}`)
+            // Wait 0.25 second before verifying next etransfer
+            await new Promise(resolve => setTimeout(resolve, 250));
             try {
                 const res = await this.verify(etransfers.incoming[i]);
                 if (!res) {
@@ -144,8 +147,23 @@ class EtransferTask extends Task {
                 }
                 continue;
             }
-
-            this.processEtransfer(etransfers.incoming[i])
+            try {
+                this.processEtransfer(etransfers.incoming[i])
+            } catch (err) {
+                this.log('error',`Message ${etransfers.incoming[i].id} could not be processed: ${err}`)
+                // move message to unprocessed label
+                try {
+                    await this.gmail!.users.messages.modify({
+                        userId: 'me',
+                        id: etransfers.incoming[i].id,
+                        addLabelIds: [this.labelIds!.unprocessed],
+                        removeLabelIds: [this.labelIds!.incoming]
+                    } as gmail_v1.Params$Resource$Users$Messages$Modify);
+                } catch (err) {
+                    this.log('error', err);
+                }
+                continue;
+            }
 
             // Move message to processing label
             try {
@@ -158,9 +176,6 @@ class EtransferTask extends Task {
             } catch (err) {
                 this.log('error', err);
             }
-
-            // Wait 0.25 second before verifying next etransfer
-            await new Promise(resolve => setTimeout(resolve, 250));
         }
     }
 
@@ -226,15 +241,21 @@ class EtransferTask extends Task {
             throw 'no "UNVERIFIED_ETRANSFERS" label found in Gmail';
         }
 
+        const unprocessed = labels.filter(e => e.name === 'UNPROCESSED_ETRANSFERS').length === 1 ? labels.filter(e => e.name === 'UNPROCESSED_ETRANSFERS')[0] : undefined;
+        if (unprocessed === undefined) {
+            throw 'no "UNPROCESSED_ETRANSFERS" label found in Gmail';
+        }
+
         // Check that label id's exist
-        if (incoming.id === undefined || processed.id === undefined || incoming.id === null || processed.id === null || unverified.id === undefined || unverified.id === null) {
+        if (incoming.id === undefined || processed.id === undefined || incoming.id === null || processed.id === null || unverified.id === undefined || unverified.id === null || unprocessed.id === undefined || unprocessed.id === null) {
             throw 'label id not found';
         }
 
         this.labelIds = {
             incoming: incoming.id,
             processed: processed.id,
-            unverified: unverified.id
+            unverified: unverified.id,
+            unprocessed: unprocessed.id
         }
 
     }
@@ -299,9 +320,11 @@ class EtransferTask extends Task {
         const authentication = await authenticate(messageDecoded)
 
         const arcResult = authentication.arc.status.result
-        const dkdomain = authentication.arc.status.comment.split('dkdomain=')[1]
+        const dkimdomains = authentication.dkim.results.map((result) => result.signingDomain)
+        const validDomains = ["payments.interac.ca", "amazonses.com"]
+        const dkdomainsIsValid = dkimdomains.every((domain) => validDomains.includes(domain))
 
-        if (!(arcResult === 'pass' && dkdomain === 'payments.interac.ca')) {
+        if (!(arcResult === 'pass' && dkdomainsIsValid)) {
             // Save the message to a file for auditing in __savePath/etransfer/unverified
             const unverifiedPath = join(__savePath, 'etransfer', 'unverified', messageLean.id!);
             if (!existsSync(unverifiedPath)) {
