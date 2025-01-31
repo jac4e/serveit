@@ -22,11 +22,17 @@ const router = express.Router();
 // flags
 const googleReady = () => {
     const google = existsSync(join(__configPath, 'google_credentials.json')) && existsSync(join(__configPath, 'google_token.json'));
+    if (!google) {
+        logger.warning('Google not ready')
+    }
     return __envConfig.backend.includeGoogle ? google : true;
 }
 
 const emailReady = () => {
     // existsSync(join(__configPath, 'smtp.json'))
+    if (!existsSync(join(__configPath, 'email.json'))) {
+        logger.warning('Email not ready')
+    }
     return existsSync(join(__configPath, 'email.json'))
 };
 
@@ -37,16 +43,26 @@ const brandingReady = () => {
 
 const adminReady = async () => {
     const users = await accountService.getAll()
+    if (users.length < 1) {
+        logger.warning('Admin not ready')
+    }
     return !(users.length < 1);
 }
 
 const appReady = () => {
     const app = existsSync(join(__frontendPath, '/index.html'));
+    if (!app) {
+        logger.warning('App not ready')
+    }
     return __envConfig.backend.includeApp ? app : true;
 }
 
 export const shouldSetup = async () => {
-    return !(appReady() && googleReady() && (await adminReady()) && brandingReady() && emailReady())
+    const condition = !(appReady() && googleReady() && (await adminReady()) && brandingReady() && emailReady())
+    if (condition) {
+        logger.warning('Setup required')
+    }
+    return condition;
 }
 
 function setupRoute(name, req, res) {

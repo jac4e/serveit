@@ -47,7 +47,7 @@ const defaultTransports: transport[] = [
 ]
 
 addColors(logLevels.colors);
-console.log(process.env.LOG_LEVEL);
+console.log("ENV LOG_LEVEL:", process.env.LOG_LEVEL);
 
 const logger = createLogger({
   level: process.env.LOG_LEVEL ?? 'debug',
@@ -68,37 +68,34 @@ const logger = createLogger({
   transports: defaultTransports
 }) as Logger & Record<keyof typeof logLevels['levels'], LeveledLogMethod>;
 
-
-if (process.env.NODE_ENV !== 'production') {
-  logger.add(new transports.Console({
-    level: 'debug',
-    format: format.combine(
-      format.colorize(),
-      format.timestamp({
-        format: 'YYYY-MM-DD HH:mm:ss'
-      }),
-      format.printf(({ level, message, timestamp, label, section }) => {
-        // (section:label)[level]: message
-        
-        // Create section label string
-        let sectionLabel = '';
-        if (section || label) {
-          sectionLabel = section;
-          if (label) {
-            sectionLabel += `:${label}`;
-          }
+logger.add(new transports.Console({
+  level: 'debug',
+  format: format.combine(
+    format.colorize(),
+    format.timestamp({
+      format: 'YYYY-MM-DD HH:mm:ss'
+    }),
+    format.printf(({ level, message, timestamp, label, section }) => {
+      // (section:label)[level]: message
+      
+      // Create section label string
+      let sectionLabel = '';
+      if (section || label) {
+        sectionLabel = section;
+        if (label) {
+          sectionLabel += `:${label}`;
         }
+      }
 
-        if (sectionLabel.length > 0) {
-          sectionLabel = `(${sectionLabel})`;
-        }
+      if (sectionLabel.length > 0) {
+        sectionLabel = `(${sectionLabel})`;
+      }
 
-        const msg = (typeof message === 'object') ? inspect(message, { colors: true, depth: 5 }) : message;
+      const msg = (typeof message === 'object') ? inspect(message, { colors: true, depth: 5 }) : message;
 
-        return `${timestamp} [${level}]${sectionLabel}: ${msg}`;
-      }),
-    ),
-  }));
-}
+      return `${timestamp} [${level}]${sectionLabel}: ${msg}`;
+    }),
+  ),
+}));
 
 export default logger;

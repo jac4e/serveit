@@ -14,6 +14,8 @@ export interface BackendConfig {
     url: string;
     port: number;
     jwt: string;
+    stripeSecret: string;
+    stripeWebhookSecret: string;
     includeApp: boolean;
     includeGoogle: boolean;
 }
@@ -51,6 +53,8 @@ export interface ProcessVariables {
     DB_PASS?: string;
     BACKEND_DOMAIN?: string;
     BACKEND_PORT?: string;
+    STRIPE_SECRET?: string;
+    STRIPE_WEBHOOK_SECRET?: string;
 }
 
 export interface ProcessVariablesDefined {
@@ -65,6 +69,8 @@ export interface ProcessVariablesDefined {
     DB_PASS: string;
     BACKEND_DOMAIN: string;
     BACKEND_PORT: string;
+    STRIPE_SECRET: string;
+    STRIPE_WEBHOOK_SECRET: string;
 }
 
 export interface SSLConfig {

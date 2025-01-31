@@ -14,7 +14,7 @@ import bodyParser from 'body-parser';
 import logger from './_helpers/logger.js';
 import https from 'https';
 import http from 'http';
-import { __configPath, __frontendPath } from './_helpers/globals.js';
+import { __configPath, __frontendPath, __savePath } from './_helpers/globals.js';
 import ssl from './_helpers/ssl.js';
 import db from './_helpers/db.js';
 import { EmailConfigFile } from './configuration/config.type.js';
@@ -121,7 +121,12 @@ app.use((req, res, next) => {
 app.use(bodyParser.urlencoded({
   extended: true
 }));
-app.use(bodyParser.json());
+// app.use(bodyParser.json());
+app.use(bodyParser.json({
+  verify: (req, res, buf) => {
+    req["rawBody"] = buf
+  }
+}))
 
 // setup route
 app.use('/setup', setup);

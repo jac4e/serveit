@@ -17,6 +17,8 @@ export function getProductionConfig(processVariables: ProcessVariablesDefined): 
         includeGoogle: processVariables.INCLUDE_GOOGLE === "true" ? true : false,
         port: parseInt(processVariables.BACKEND_PORT),
         jwt: randomBytes(96).toString('hex'),
+        stripeSecret: processVariables.STRIPE_SECRET,
+        stripeWebhookSecret: processVariables.STRIPE_WEBHOOK_SECRET
     }
     
     const ssl: SSLConfig = {

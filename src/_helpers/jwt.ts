@@ -14,6 +14,7 @@ export default function jwtAuthGuard() {
             '/api/store/products',
             '/api/accounts/auth',
             '/api/accounts/register',
+            '/api/refills/stripe/webhook',
         ]
     });
 }
