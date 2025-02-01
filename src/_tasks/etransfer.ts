@@ -31,7 +31,7 @@ function urlSafeBase64Decode(base64: string): string {
     return Buffer.from(base64, 'base64').toString('utf8');
 }
 
-function parseEtransferEmailFromDOM(document: any, log: Task["log"]): { refillid: string; amount: string; } {
+function parseEtransferEmailFromDOM(document: any, log: Task["log"]): { refillid: string; amount: number; } {
     let refillid: string | undefined = undefined;
     let amount: string | undefined = undefined;
 
@@ -70,7 +70,7 @@ function parseEtransferEmailFromDOM(document: any, log: Task["log"]): { refillid
     }
     log('debug', `amount: ${amount}`);
 
-    return { refillid: refillid, amount: amount };
+    return { refillid: refillid, amount: Number(amount) };
 }
 
 
