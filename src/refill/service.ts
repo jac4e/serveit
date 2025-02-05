@@ -76,10 +76,10 @@ async function create(data: IRefillForm): Promise<IRefill> {
         refill.cost = refill.amount;
         refill.reference = randomUUID();
     } else if (refill.method === RefillMethods.CreditCard) {
-        refill.cost = BigInt(Math.round((Number(refill.amount) + 5) / (1 - 0.027)));
+        refill.cost = BigInt(Math.round((Number(refill.amount) + 5 + 16) / (1 - 0.027)));
         refill.reference = randomUUID();
     } else if (refill.method === RefillMethods.DebitCard) {
-        refill.cost = BigInt(Math.round((Number(refill.amount) + 15)));
+        refill.cost = BigInt(Math.round((Number(refill.amount) + 15 + 16)));
         refill.reference = randomUUID();
     }
 
