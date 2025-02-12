@@ -30,6 +30,12 @@ const schema = new Schema<ITransactionDocument, Model<ITransactionDocument>>({
     },
     // hash: { type: String, required: true}
 });
+
+schema.index({ accountid: 1 });
+schema.index({ accountid: 1, type: 1 });
+schema.index({ type: 1 });
+schema.index({ date: 1 });  
+
 schema.set('toJSON', {
     virtuals: true,
     transform: transformDoc

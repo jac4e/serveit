@@ -24,6 +24,10 @@ const schema = new mongoose.Schema<IProductDocument, Model<IProductDocument>>({
         required: true
     }
 });
+
+schema.index({ price: 1 });
+schema.index({ stock: 1 });
+
 schema.set('toJSON', {
     virtuals: true,
     transform: transformDoc

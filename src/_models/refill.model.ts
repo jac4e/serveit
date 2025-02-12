@@ -47,6 +47,9 @@ const schema = new Schema<IRefillDocument, Model<IRefillDocument>>({
         trim: true
     }
 });
+
+schema.index({ status: 1 });
+
 schema.set('toJSON', {
     virtuals: true,
     transform: transformDoc
