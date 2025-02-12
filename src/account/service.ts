@@ -7,7 +7,7 @@ import transaction from '../_helpers/transaction.js';
 import { zxcvbn, zxcvbnOptions } from '@zxcvbn-ts/core'
 import zxcvbnCommonPackage from '@zxcvbn-ts/language-common';
 import zxcvbnEnPackage from '@zxcvbn-ts/language-en';
-import { ITransaction, IAccountDocument, IAccountForm, IAccount, ICredentials, Roles } from 'typesit';
+import { ITransaction, IAccountDocument, IAccountBaseForm, IAccountSettingsForm, IAccount, ICredentials, Roles } from 'typesit';
 import email from '../_tasks/email.js';
 
 
@@ -72,7 +72,7 @@ async function matchPassword(id: string, password: string): Promise<boolean> {
 }
 
 // Private registration of verified accounts
-async function create(accountParam: IAccountForm): Promise<void> {
+async function create(accountParam: IAccountBaseForm): Promise<void> {
   // validate
   // we need to ensure following properties exist:
   // username
@@ -221,7 +221,7 @@ async function verify(id: string, role: Roles): Promise<void> {
     throw "cannot verify user as admin or unverified"
   }
   account.role = role;
-  account.save();
+  await account.save();
 
   // Notify user
   const subject = `Spendit - Account Verified`;
@@ -240,23 +240,21 @@ async function pay(amount: bigint, id: string): Promise<void> {
   }
 }
 
-async function updateAccountById(id: string, accountParam: IAccountForm) {
+async function updateAccountById(id: string, accountParam: IAccountBaseForm | IAccountSettingsForm) {
 
   // Remove password field from accountParam
-  delete accountParam.password;
-
   let account = await Account.findById<IAccountDocument>(id)
   if (account === null) {
       throw `Account '${id}' does not exist`;
   }
 
-  // Notify user first, in case email is changed
+  const oldAccount = account.toObject<IAccount>()
   const subject = `Spendit - Account Information Changed`;
   const message = `Hi ${account.firstName},\nYour spendit account with the ID of ${account.id} has been modified. If this was not initiated by you, please reach out to an admin as soon as possible.`
-  email.send(account.toObject(), subject, message)
-
+  
   account.set(accountParam);
-  account.save()
+  await account.save()  
+  email.send(oldAccount, subject, message)
 }
 
 async function updatePasswordById(id: string, password: string) {
@@ -265,19 +263,22 @@ async function updatePasswordById(id: string, password: string) {
       throw `Account '${id}' does not exist`;
   }
 
+  // Create message
+  const oldAccount = account.toObject<IAccount>()
+  const subject = `Spendit - Account Password Changed`;
+  const message = `Hi ${account.firstName},\nYour spendit account with the ID of ${account.id} has had its password change. If this was not initiated by you, please reach out to an admin as soon as possible.`
+
   // Password validation
   const result = zxcvbn(password, [account.username, account.firstName, account.lastName, account.email]);
   if (result.score < 2) {
     throw `New password is too weak: ${result.feedback.warning}`
   }
 
-  // Notify user
-  const subject = `Spendit - Account Password Changed`;
-  const message = `Hi ${account.firstName},\nYour spendit account with the ID of ${account.id} has had its password change. If this was not initiated by you, please reach out to an admin as soon as possible.`
-  email.send(account.toObject(), subject, message)
-
   account.hash = bcrypt.hashSync(password, saltRounds);
-  account.save()
+  await account.save()
+
+  // Notify user
+  email.send(oldAccount, subject, message)
 
   // Reset session
   resetSession(id)

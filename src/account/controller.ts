@@ -2,7 +2,7 @@ import express, { NextFunction, request, Response } from 'express';
 import expressJwt, { Request } from 'express-jwt';
 import Guard from 'express-jwt-permissions';
 import transaction from '../_helpers/transaction.js';
-import { IAccountForm, isIAccountForm, ICredentials, isICredentials, Roles, isIRefillForm, IRefillForm, RefillMethods } from 'typesit';
+import { IAccountBaseForm, isIAccountBaseForm, IAccountSettingsForm, isIAccountSettingsForm, ICredentials, isICredentials, Roles, isIRefillForm, IRefillForm, RefillMethods, isIAccountPasswordForm } from 'typesit';
 import accountService from './service.js';
 import { randomUUID } from 'crypto'
 import refillService from '../refill/service.js';
@@ -54,7 +54,7 @@ function auth(req, res, next) {
 function register(req, res, next) {
     // Check if body is an IAccountForm type
     const data = req.body;
-    if(!isIAccountForm(data)){
+    if(!isIAccountBaseForm(data)){
         // logger.debug(data);
         throw 'request body is of wrong type, must be IAccountForm'
     }
@@ -91,12 +91,12 @@ function getSelfTransactions(req, res, next) {
 function updateSelf(req, res, next) {
     const selfId = getIdFromPayload(req);
     const type = req.body.type;
-    const accountForm = req.body.accountForm;
+    const form = req.body.accountForm;
     const currentPassword = req.body.currentPassword;
 
 
     // Check if body is an IAccountForm type
-    if(!isIAccountForm(accountForm)){
+    if(!isIAccountSettingsForm(form) && !isIAccountPasswordForm(form)) {
         throw 'AccountForm is of wrong type, must be IAccountForm'
     }
 
@@ -111,13 +111,10 @@ function updateSelf(req, res, next) {
         if (!match) {
             throw 'Current password is incorrect'
         }
-        if (type === 'password') {
-            if (accountForm.password === undefined) {
-                throw 'password is required in accountForm'
-            }
-            accountService.updatePasswordById(selfId,accountForm.password).then(() => res.json({})).catch(err => next(err))
-        } else if (type === 'account') {
-            accountService.updateAccountById(selfId,accountForm).then(() => res.json({})).catch(err => next(err))
+        if (type === 'password' && isIAccountPasswordForm(form)) {
+            accountService.updatePasswordById(selfId,form.password).then(() => res.json({})).catch(err => next(err))
+        } else if (type === 'account' && isIAccountSettingsForm(form)) {
+            accountService.updateAccountById(selfId,form).then(() => res.json({})).catch(err => next(err))
         } else {
             throw 'Invalid update type'
         }
@@ -156,7 +153,7 @@ function cancelRefill(req, res, next) {
 function create(req, res, next) {
     // Check if body is an IAccountForm type
     const data = req.body;
-    if(!isIAccountForm(data)){
+    if(!isIAccountBaseForm(data)){
         throw 'request body is of wrong type, must be IAccountForm'
     }
     accountService.create(data).then(() => res.json({})).catch(err => next(err))
@@ -185,7 +182,7 @@ function deleteAccountById(req, res, next) {
 
 function updateAccountById(req, res, next) {
     const data = req.body;
-    if(!isIAccountForm(data)){
+    if(!isIAccountBaseForm(data)){
         throw 'request body is of wrong type, must be IAccountForm'
     }
     accountService.updateAccountById(req.params['accountId'],data)
