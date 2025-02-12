@@ -117,6 +117,7 @@ function updateSelf(req, res, next) {
             }
             accountService.updatePasswordById(selfId,accountForm.password).then(() => res.json({})).catch(err => next(err))
         } else if (type === 'account') {
+            delete accountForm.role
             accountService.updateAccountById(selfId,accountForm).then(() => res.json({})).catch(err => next(err))
         } else {
             throw 'Invalid update type'
