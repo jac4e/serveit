@@ -20,6 +20,8 @@ const schema = new mongoose.Schema<IAccountDocument, Model<IAccountDocument>>({
     }
 });
 
+schema.index({ role: 1 });
+
 schema.set('toJSON', {
     virtuals: true,
     versionKey: false,

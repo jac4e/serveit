@@ -20,6 +20,9 @@ async function getAllTransactions() {
 }
 
 // Statistics functions
+// All these functions need improving as they take like one second to respond I think its the reduce?
+
+
 async function getFinanceStats(dateOption: StatsDateRange): Promise<IFinanceStats> {
     // Turn dateOption into a date range
     const endDate = new Date();
@@ -38,18 +41,30 @@ async function getFinanceStats(dateOption: StatsDateRange): Promise<IFinanceStat
 
     const dateQuery = dateOption === StatsDateRange.All ? {} : { date: { $gte: startDate, $lt: endDate } };
 
-    // Generate finance stats
-    // Total credit
-    const totalCredit = await Transaction.find({ type: TransactionType.Credit, ...dateQuery }).then(transactions => {
-        return transactions.reduce((acc, transaction) => acc + BigInt(transaction.total), 0n);
-    });
-    // Revenue
-    const revenue = await Transaction.find({ type: TransactionType.Debit, ...dateQuery }).then(transactions => {
-        return transactions.reduce((acc, transaction) => acc + BigInt(transaction.total), 0n);
-    });
+    const stats = await Transaction.aggregate([
+        { $match: { ...dateQuery } },
+        {
+          $group: {
+            _id: '$type',
+            total: { $sum: '$total' }
+          }
+        }
+      ]);
+
+    let totalCredit = 0n;
+    let revenue = 0n;
+
+    for (const stat of stats) {
+        if (stat._id === TransactionType.Credit) {
+        totalCredit = BigInt(stat.total);
+        } else if (stat._id === TransactionType.Debit) {
+        revenue = BigInt(stat.total);
+        }
+    }
+
     const creditBalance = totalCredit - revenue;
-    // Cost of goods sold
     const costOfGoodsSold = 0n;
+    
     const profit = revenue - costOfGoodsSold;
     return { totalCredit: Number(totalCredit)/100, revenue: Number(revenue)/100, creditBalance: Number(creditBalance)/100, costOfGoodsSold: Number(costOfGoodsSold)/100, profit: Number(profit)/100 };
 }
