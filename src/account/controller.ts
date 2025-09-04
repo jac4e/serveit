@@ -97,7 +97,7 @@ function updateSelf(req, res, next) {
 
     // Check if body is an IAccountForm type
     if(!isIAccountSettingsForm(form) && !isIAccountPasswordForm(form)) {
-        throw 'AccountForm is of wrong type, must be IAccountForm'
+        throw 'AccountForm is of wrong type, must be IAccountSettingsForm or IAccountPasswordForm'
     }
 
     // Check that current password is correct
@@ -118,8 +118,7 @@ function updateSelf(req, res, next) {
         } else {
             throw 'Invalid update type'
         }
-    }).catch(err => next(err))
-
+    }).catch(err => next(err)) 
 }
 
 function getSelfRefillHistory(req, res, next) {

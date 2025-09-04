@@ -1,6 +1,6 @@
 import db from '../_helpers/db.js';
 import transaction from '../_helpers/transaction.js';
-import { ITransaction, ITransactionForm, Roles, TransactionType, IAccountStats, IFinanceStats, IInventoryStats, IRefillStats, IStoreStats, ITaskLean, ITransactionStats, RefillStatus, StatsDateRange } from 'typesit';
+import { ITransaction, ITransactionForm, Roles, TransactionType, IAccountStats, IFinanceStats, IInventoryStats, IRefillStats, IStoreStats, ITaskLean, ITransactionStats, RefillStatus, StatsDateRange, ProductTypes, IProduct } from 'typesit';
 import { tasks } from '../_tasks/task.js';
 
 const Account = db.account
@@ -72,15 +72,15 @@ async function getFinanceStats(dateOption: StatsDateRange): Promise<IFinanceStat
 async function getInventoryStats(): Promise<IInventoryStats> {
     // Generate inventory stats
     // Total products
-    const total = await Product.countDocuments();
+    const total = await Product.countDocuments({ type: ProductTypes.Stock });
     // In stock products
-    const inStock = await Product.countDocuments({ stock: { $gt: 0 } });
+    const inStock = await Product.countDocuments({ type: ProductTypes.Stock, stock: { $gt: 0 } });
     // Out of stock products
-    const outOfStock = await Product.countDocuments({ stock: 0 });
+    const outOfStock = await Product.countDocuments({ type: ProductTypes.Stock, stock: 0 });
     // Book value
     const bookValue = 0;
     // Retail value
-    const retailValue = Number(await Product.find().then(products => {
+    const retailValue = Number(await Product.find<IProduct<ProductTypes.Stock>>({ type: ProductTypes.Stock }).then(products => {
         return products.reduce((acc, product) => acc + BigInt(product.price) * BigInt(product.stock), 0n);
     })) / 100;
     return { total: total, inStock: inStock, outOfStock: outOfStock, bookValue: bookValue, retailValue: retailValue };

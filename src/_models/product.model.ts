@@ -1,5 +1,5 @@
 import mongoose, { Document, Model } from 'mongoose';
-import { IProductDocument } from 'typesit';
+import { IProductDocument, ProductTypes } from 'typesit';
 
 const schema = new mongoose.Schema<IProductDocument, Model<IProductDocument>>({
     name: {
@@ -21,17 +21,49 @@ const schema = new mongoose.Schema<IProductDocument, Model<IProductDocument>>({
     },
     stock: {
         type: String,
+        $cond: {
+            if: { $eq: ["$type", ProductTypes.Stock] },
+            then: { required: true },
+            else: { required: false }
+        }
+    },
+    order: {
+        supplier: {
+            type: String,
+            $cond: {
+                if: { $eq: ["$type", ProductTypes.Order] },
+                then: { required: true },
+                else: { required: false }
+            }
+        },
+        minimum: {
+            type: String,
+            $cond: {
+                if: { $eq: ["$type", ProductTypes.Order] },
+                then: { required: true },
+                else: { required: false }
+            }
+        },
+        current: {
+            type: String,
+            required: false
+        }
+    },
+    type: {
+        type: String,
+        enum: Object.values(ProductTypes),
         required: true
     }
 });
 
+schema.index({ type: 1 });
 schema.index({ price: 1 });
 schema.index({ stock: 1 });
 
 schema.set('toJSON', {
     virtuals: true,
     transform: transformDoc
-})
+});
 
 schema.post(['find', 'findOne', 'findOneAndUpdate'], function (res) {
     if (!this.mongooseOptions().lean) {
@@ -49,10 +81,20 @@ function transformDoc(doc) {
         return;
     }
     doc.id = doc._id.toString();
-    doc.stock = BigInt(doc.stock)
-    doc.price = BigInt(doc.price)
+    if (doc.stock) {
+        doc.stock = BigInt(doc.stock);
+    }
+    if (doc.price) {
+        doc.price = BigInt(doc.price);
+    }
+    if (doc.order && doc.order.minimum) {
+        doc.order.minimum = BigInt(doc.order.minimum);
+    }
+    if (doc.order && doc.order.current) {
+        doc.order.current = BigInt(doc.order.current);
+    }
     delete doc._id;
     delete doc.__v;
 }
 
-export default mongoose.model('Product', schema);
+export default mongoose.model<IProductDocument>('Product', schema);

@@ -3,7 +3,7 @@ import { JwtPayload } from 'jsonwebtoken';
 import {__envConfig} from '../configuration/config.js';
 import transactionService from '../_helpers/transaction.js';
 import accountService from '../account/service.js';
-import { ICartItem, ICartItemSerialized, ICartSerialized, IProduct, IProductDocument, IProductForm, ITransactionForm, ITransactionItem, Roles, TransactionType } from 'typesit';
+import { ICartItem, ICartItemSerialized, ICartSerialized, IProduct, IProductDocument, IProductForm, isIProduct, ITransactionForm, ITransactionItem, ProductTypes, Roles, TransactionType } from 'typesit';
 import email from '../_tasks/email.js';
 
 const Product = db.product;
@@ -55,61 +55,112 @@ async function deleteProductById(id: IProduct['id']): Promise<void> {
 }
 
 async function purchaseCart(payload: JwtPayload, cartSerialized: ICartSerialized): Promise<void> {
-    // cart is array of ids
-    //
-    //    [ ids ... ]
-    //
-
-    if(payload.sub === undefined) {
-        throw 'user is not found in token'
+    if (!payload.sub) {
+        throw 'User is not found in token';
     }
 
-    // check product count
-    // logger.debug("buying cart")
     if (cartSerialized.length < 1) {
-        throw "Cart is empty"
+        throw 'Cart is empty';
     }
-    const products = await Product.find({'_id': { $in: cartSerialized.map((item: ICartItemSerialized): IProduct['id'] => item.id) } });
-    // logger.debug(products)
-    // create cart object for invoice
-    let cart = (await Product.find({'_id': { $in: cartSerialized.map((item: ICartItemSerialized): IProduct['id'] => item.id) } }).lean<IProduct[]>()).map(({stock, price, ...keepAttrs}: IProduct): ICartItem => ({...keepAttrs, price: BigInt(price), amount: BigInt(0), total: BigInt(0)}));
-    
-    let sum = BigInt(0);
-    for (let index = 0; index < cartSerialized.length; index++) {
-        const productIndex = products.findIndex((product) => product.id === cartSerialized[index].id)
-        if(!products[productIndex]){
-            throw `Product with id: ${cartSerialized[index].id} could not be found`
-        }
-        // calc product amt in cart
 
-        cart[productIndex].amount = cartSerialized[index].amount;
-        if (cart[productIndex].amount>BigInt(products[productIndex].stock)){
-            throw `product ${cart[productIndex].name} does not have enough stock left`
+    const productIds = cartSerialized.map((item: ICartItemSerialized): IProduct['id'] => item.id);
+    const productStock = await Product.find({ '_id': { $in: productIds }, type: ProductTypes.Stock }).lean<IProduct<ProductTypes.Stock>[]>();
+    const productOrder = await Product.find({ '_id': { $in: productIds }, type: ProductTypes.Order }).lean<IProduct<ProductTypes.Order>[]>();
+
+    if ((productStock.length + productOrder.length) !== cartSerialized.length) {
+        throw 'Some products could not be found';
+    }
+
+    const cart: ICartItem[] = [...productStock, ...productOrder].map((product: IProduct): ICartItem => {
+        // find cart item by the product id
+        const cartItem = cartSerialized.find((item: ICartItemSerialized): boolean => item.id === product.id);
+        
+        if (!cartItem) {
+            throw `Product with id: ${product.id} could not be found in cart`;
         }
 
+        if (isIProduct(product, ProductTypes.Stock) && BigInt(cartItem.amount) > BigInt(product.stock)) {
+            throw `Product ${product.name} does not have enough stock left`;
+        }
+        
+        return {
+            ...product,
+            price: BigInt(product.price),
+            amount: BigInt(cartItem.amount),
+            total: BigInt(product.price) * BigInt(cartItem.amount)
+        }
+    });
+
+    const sum = cart.reduce((acc: bigint, item: ICartItem): bigint => acc + item.total, BigInt(0));
+    // for (const item of cartSerialized) {
+    //     const productIndex = products.findIndex((product) => product.id === item.id);
+    //     const product = products[productIndex];
+    //     const cartItem = cart[productIndex];
+
+    //     if (!product) {
+    //         throw `Product with id: ${item.id} could not be found`;
+    //     }
+
+    //     cartItem.amount = BigInt(item.amount);
+    //     if (isIProduct(product, ProductTypes.Stock) && cartItem.amount > BigInt(product.stock)) {
+    //         throw `Product ${cartItem.name} does not have enough stock left`;
+    //     }
+
+    //     cartItem.total = cartItem.amount * cartItem.price;
+    //     sum += cartItem.total;
+    // }
+
+    const transactionParams: ITransactionForm = {
         accountId: payload.sub,
         type: TransactionType.Debit,
         reason: 'Web Purchase',
-        products: cart.map((cartItem: ICartItem): ITransactionItem => {
-            return {total: cartItem.total.toString(), amount: cartItem.amount.toString(), name: cartItem.name, description: cartItem.description, price: cartItem.price.toString()};
-        }),
+        products: cart.map((cartItem: ICartItem): ITransactionItem => ({
+            total: cartItem.total.toString(),
+            amount: cartItem.amount.toString(),
+            name: cartItem.name,
+            description: cartItem.description,
+            price: cartItem.price.toString()
+        })),
         total: sum.toString()
-    }
+    };
 
-    // Check if account has enough balance and create a transaction
     await accountService.pay(sum, payload.sub);
     await transactionService.create(transactionParams);
 
-    // transaction has complete, can now reduce stock levels
-    for (let index = 0; index < cart.length; index++) {
-        products[index].stock = (BigInt(products[index].stock) - BigInt(cart[index].amount)).toString();
-        // Notify admin if stock has been reduced to zero
-        if (products[index].stock === '0') {
-            const subject = `Spendit - ${products[index].name} is Out of Stock`;
-            const message = `Hi Admins,\nThe last ${products[index].name} has just been purchased.`
-            email.sendAll(Roles.Admin, subject, message)
+    // for (const item of cart) {
+    //     const productIndex = products.findIndex((product) => product.id === item.id);
+    //     const product = products[productIndex];
+
+    //     product.stock = (BigInt(product.stock) - item.amount).toString();
+    //     if (product.stock === '0') {
+    //         const subject = `Spendit - ${product.name} is Out of Stock`;
+    //         const message = `Hi Admins,\nThe last ${product.name} has just been purchased.`;
+    //         await email.sendAll(Roles.Admin, subject, message);
+    //     }
+
+    //     await Product.updateOne({ _id: product.id }, { stock: product.stock });
+    // }
+
+    for (const item of cart) {
+        // Update stock
+        if (isIProduct(item, ProductTypes.Stock)) {
+            item.stock = item.stock - item.amount;
+            if (item.stock === 0n) {
+                const subject = `Spendit - ${item.name} is Out of Stock`;
+                const message = `Hi Admins,\nThe last ${item.name} has just been purchased.`;
+                await email.sendAll(Roles.Admin, subject, message);
+            }
+
+            await Product.updateOne({ _id: item.id }, { stock: item.stock });
+        // Create order and check if minimum is met
+        } else if (isIProduct(item, ProductTypes.Order)) {
+            // TODO: Add order model so we can add an order here
+            if (item.order.current + item.amount >= item.order.minimum) {
+                const subject = `Spendit - ${item.name} has fufilled its minimum order quantity`;
+                const message = `Hi Admins,\n${item.name} should now be ordered.`;
+                await email.sendAll(Roles.Admin, subject, message);
+            }
         }
-        products[index].save();
     }
 }
 
