@@ -55,11 +55,12 @@ export default abstract class Task {
 
         try {
             await this.taskHandler();
-            this.lastRun = new Date();
         } catch (error) {
             this.log('error', `Error running task ${this.name}: ${error}`);
+        } finally {
+            this.lastRun = new Date();
+            this.processTimer = setTimeout(this.task, this.interval);
         }
-        this.processTimer = setTimeout(this.task, this.interval);
     }
 
     start() {
@@ -87,7 +88,6 @@ export default abstract class Task {
             clearTimeout(this.processTimer);
         }
     }
-
     protected async task() {
         this.lastRun = new Date();
 
@@ -99,9 +99,11 @@ export default abstract class Task {
             await this.taskHandler();
         } catch (error) {
             this.log('error', `Error running task ${this.name}: ${error}`);
+        } finally {
+            if (!this.stopped) {
+                this.nextRun = new Date(Date.now() + this.interval);
+                this.processTimer = setTimeout(this.task, this.interval);
+            }
         }
-        
-        this.nextRun = new Date(Date.now() + this.interval);
-        this.processTimer = setTimeout(this.task, this.interval);
     }
 }
