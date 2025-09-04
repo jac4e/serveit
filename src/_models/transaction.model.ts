@@ -7,9 +7,10 @@ const schema = new Schema<ITransactionDocument, Model<ITransactionDocument>>({
         type: Date,
         default: Date.now
     },
-    accountid: {
+    accountId: {
         type: String,
-        required: true
+        required: true,
+        ref: 'Account'
     },
     // toid: { type: String, required: true },
     type: {

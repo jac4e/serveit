@@ -16,7 +16,7 @@ async function create(transactionParam: ITransactionForm): Promise<void> {
     }
 
     // Check if account valid
-    const account = await accountService.getById(transactionParam.accountid).catch(err => {
+    const account = await accountService.getById(transactionParam.accountId).catch(err => {
         throw err;
     });
 
@@ -39,7 +39,7 @@ async function create(transactionParam: ITransactionForm): Promise<void> {
     // Total
     const productsList = transaction.products.map(item => `\t${item.name}\t${item.description ?? 'N/A'}\t${item.amount}\t${item.price}\t${item.total}`).join('\n')
     const productTable = `\tName\tDescription\tQuantity\tUnit Price\tAmount\n${productsList}\n\tTotal:${transaction.total}`
-    const message = `Date: ${transaction.date}\nTransaction ID: ${transaction.id}\nAccount ID: ${transaction.accountid}\nType: ${transaction.type}\nReason: ${transaction.reason}\nProducts:\n${productTable}`
+    const message = `Date: ${transaction.date}\nTransaction ID: ${transaction.id}\nAccount ID: ${transaction.accountId}\nType: ${transaction.type}\nReason: ${transaction.reason}\nProducts:\n${productTable}`
     email.send(account, subject, message)
 }
 

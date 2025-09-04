@@ -109,7 +109,7 @@ async function getAccountStats(): Promise<IAccountStats> {
     const members = await Account.countDocuments({ role: Roles.Member });
     // Admin accounts
     const admins = await Account.countDocuments({ role: Roles.Admin });
-    return { total: total, unverified: unverified, nonmember: nonMembers, member: members, admin: admins };
+    return { total: total, unverified: unverified, nonMember: nonMembers, member: members, admin: admins };
 }
 
 async function getRefillStats(): Promise<IRefillStats> {
@@ -167,10 +167,10 @@ async function getStoreStats(): Promise<IStoreStats> {
 
     validTransactions.forEach((transaction) => {
         const amount = parseFloat(transaction.total); // Convert string to number
-        if (!buyerMap[transaction.accountid]) {
-            buyerMap[transaction.accountid] = 0;
+        if (!buyerMap[transaction.accountId]) {
+            buyerMap[transaction.accountId] = 0;
         }
-        buyerMap[transaction.accountid] += amount;
+        buyerMap[transaction.accountId] += amount;
     });
 
     // Sort the buyerMap by amount spent

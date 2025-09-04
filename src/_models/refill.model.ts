@@ -5,7 +5,8 @@ const schema = new Schema<IRefillDocument, Model<IRefillDocument>>({
     account: {
         type: String,
         trim: true,
-        required: true
+        required: true,
+        ref: 'Account'
     },
     method: {
         type: String,

@@ -20,7 +20,7 @@ import db from './_helpers/db.js';
 import { EmailConfigFile } from './configuration/config.type.js';
 import { writeFileSync } from 'fs';
 import bcrypt from 'bcrypt';
-import { IAccountForm, Roles, isIAccountForm } from 'typesit';
+import { IAccountBaseForm, Roles, isIAccountBaseForm } from 'typesit';
 import etransfer from './_tasks/etransfer.js';
 import email from './_tasks/email.js';
 import { tasks } from './_tasks/task.js';
@@ -44,11 +44,12 @@ if (__envConfig.environment === 'development') {
 
   // Setup development environment
   //   dev account
-  const devaccount: IAccountForm = {
+  const devaccount: IAccountBaseForm = {
     username: 'dev',
     firstName: 'dev',
     lastName: 'dev',
     email: 'dev@dev.dev',
+    'notify': true,
     role: Roles['Admin'],
     password: password,
   }

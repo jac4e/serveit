@@ -165,7 +165,7 @@ async function completeRefill(refillid: string, {amount, reference, note}: {amou
 
     // Create transaction
     const transaction: ITransactionForm = {
-        accountid: refill.account,
+        accountId: refill.account,
         type: TransactionType.Credit,
         total: String(refill.amount).replace('.', ''),
         reason: `${refill.method} Refill: ${reference || refill.reference}`,

@@ -87,14 +87,7 @@ async function purchaseCart(payload: JwtPayload, cartSerialized: ICartSerialized
             throw `product ${cart[productIndex].name} does not have enough stock left`
         }
 
-        cart[productIndex].total = BigInt(cart[productIndex].amount) * BigInt(cart[productIndex].price);
-        // calc sum
-        sum += BigInt(cart[productIndex].total);
-    }
-
-    // logger.debug(cart)
-    let transactionParams: ITransactionForm = {
-        accountid: payload.sub,
+        accountId: payload.sub,
         type: TransactionType.Debit,
         reason: 'Web Purchase',
         products: cart.map((cartItem: ICartItem): ITransactionItem => {
