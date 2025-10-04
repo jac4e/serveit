@@ -95,7 +95,11 @@ async function create(data: IRefillForm): Promise<IRefill> {
         return;
     });
 
-    return Refill.findById(refill._id).lean<IRefill>();
+    const result = await Refill.findById(refill._id).lean<IRefill>();
+    if (!result) {
+        throw new Error('Refill not found after creation');
+    }
+    return result;
 }
 
 async function getAll(): Promise<IRefill[]> {
@@ -103,7 +107,11 @@ async function getAll(): Promise<IRefill[]> {
 }
 
 async function getById(id: string): Promise<IRefill> {
-    return await Refill.findById(id).lean<IRefill>();
+    const result = await Refill.findById(id).lean<IRefill>();
+    if (!result) {
+        throw new Error('Refill not found');
+    }
+    return result;
 }
 
 async function updateById(id: string, data: Partial<IRefill>): Promise<IRefill> {
@@ -114,6 +122,10 @@ async function updateById(id: string, data: Partial<IRefill>): Promise<IRefill> 
     const updatedData = await Refill.findByIdAndUpdate(id, data, {
         new: true
     }).lean<IRefill>();
+
+    if (!updatedData) {
+        throw new Error('Refill not found');
+    }
 
     // Email user
     const account = await accountService.getById(updatedData.account);

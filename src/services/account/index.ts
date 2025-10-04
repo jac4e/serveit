@@ -53,6 +53,9 @@ async function auth(credentials: ICredentials): Promise<{ account: IAccount, tok
   const balance = await getBalance(account.id);
   // toJSON sanitization is not working
   const sanitizedAccount = await Account.findById(account.id).lean<IAccount>();
+  if (!sanitizedAccount?.id) {
+    throw new Error("Account id is missing");
+  }
   return {
     account: {
       ...sanitizedAccount,

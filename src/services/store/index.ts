@@ -12,7 +12,11 @@ async function getAllProducts(): Promise<IProduct[]> {
 }
 
 async function getProductById(productId: IProduct['id']): Promise<IProduct> {
-    return await Product.findById(productId).lean<IProduct>();
+    const product = await Product.findById(productId).lean<IProduct>();
+    if (!product) {
+        throw `Product with id '${productId}' does not exist`;
+    }
+    return product;
 }
 
 async function createProduct(productParam: IProductForm): Promise<void> {

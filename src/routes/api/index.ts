@@ -1,8 +1,8 @@
 import express from 'express';
-import accounts from '../account/index.js';
-import admin from '../admin/index.js';
-import store from '../store/index.js';
-import refills from '../refill/index.js';
+import accounts from './account/index.js'
+import admin from './admin/index.js'
+import store from './store/index.js'
+import refills from './refill/index.js'
 import jwtAuthGuard from '../../middleware/jwt-auth.js';
 import cors from 'cors';
 import { __pkg } from '../../config/config.js';

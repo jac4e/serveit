@@ -1,7 +1,7 @@
 import express from 'express';
 import Guard from 'express-jwt-permissions';
 import { isICartSerialized, isIProduct, isIProductForm, Roles } from 'typesit';
-import storeService from '../../services/store/index.js';
+import storeService from '../../../services/store/index.js';
 
 const router = express.Router();
 const guard = Guard({

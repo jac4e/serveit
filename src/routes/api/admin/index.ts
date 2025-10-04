@@ -1,8 +1,8 @@
 import express from 'express';
 import Guard from 'express-jwt-permissions';
 import { isITransactionForm, Roles } from 'typesit';
-import adminService from '../../services/admin/index.js';
-import logger from '../../core/logger/index.js';
+import adminService from '../../../services/admin/index.js';
+import logger from '../../../core/logger/index.js';
 
 const router = express.Router();
 const guard = Guard({

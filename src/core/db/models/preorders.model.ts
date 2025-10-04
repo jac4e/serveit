@@ -73,4 +73,4 @@ function transformDoc(doc: any) {
     delete doc.__v;
 }
 
-export default mongoose.model<IPreOrder>('PreOrder', schema);
+export default mongoose.model('PreOrder', schema);

@@ -36,14 +36,28 @@ schema.index({ date: 1 });
 
 schema.set('toJSON', {
     virtuals: true,
-    transform: (doc) => {
-        if (!doc) return;
-        doc.id = doc._id.toString();
-        doc.cost = BigInt(doc.cost);
-        doc.delta = BigInt(doc.delta);
-        delete doc._id;
-        delete doc.__v;
-    }
+    transform: transformDoc
 });
+
+schema.post(['find', 'findOne', 'findOneAndUpdate'], function (res) {
+    if (!this.mongooseOptions().lean) {
+        return;
+    }
+    if (Array.isArray(res)) {
+        res.forEach(transformDoc);
+        return;
+    }
+    transformDoc(res);
+});
+
+function transformDoc(doc) {
+    if (!doc) {
+        return;
+    }
+    doc.id = doc._id.toString();
+    doc.total = BigInt(doc.total);
+    delete doc._id;
+    delete doc.__v;
+}
 
 export default mongoose.model<IStockEntryDocument>('StockEntry', schema);
