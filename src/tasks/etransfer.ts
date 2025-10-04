@@ -5,7 +5,7 @@ import { authenticate } from 'mailauth';
 import logger from '../../core/logger/index.js';
 import jsdom from 'jsdom';
 import e from "express";
-import transactionService from "../transactions/index.js";
+import transactionService from "../ledgers/transactions/index.js";
 import { ITransactionForm, TransactionType } from "typesit";
 import { __savePath } from "../../config/paths.js";
 import { join, dirname } from 'path';

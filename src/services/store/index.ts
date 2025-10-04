@@ -1,6 +1,6 @@
 import db from '../../core/db/index.js';
 import { JwtPayload } from 'jsonwebtoken';
-import transactionService from '../transactions/index.js';
+import transactionService from '../ledgers/transactions/index.js';
 import accountService from '../account/index.js';
 import { ICartItem, ICartItemSerialized, ICartSerialized, IProduct, IProductDocument, IProductForm, isIProduct, ITransactionForm, ITransactionItem, ProductTypes, Roles, TransactionType } from 'typesit';
 import email from '../tasks/email.js';

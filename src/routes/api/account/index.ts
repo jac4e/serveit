@@ -1,7 +1,7 @@
 import express, { NextFunction, request, Response } from 'express';
 import expressJwt, { Request } from 'express-jwt';
 import Guard from 'express-jwt-permissions';
-import transactionService from '../../../services/transactions/index.js';
+import transactionService from '../../../services/ledgers/transactions/index.js';
 import { IAccountBaseForm, isIAccountBaseForm, IAccountSettingsForm, isIAccountSettingsForm, ICredentials, isICredentials, Roles, isIRefillForm, IRefillForm, RefillMethods, isIAccountPasswordForm } from 'typesit';
 import accountService from '../../../services/account/index.js';
 import { randomUUID } from 'crypto'
