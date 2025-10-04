@@ -12,6 +12,19 @@ import { join, dirname } from 'path';
 import { existsSync, mkdirSync, readFileSync, statSync, readdirSync, writeFileSync } from 'fs';
 import refillService from '../refill/service.js';
 
+// Constants
+const XPATH_SINGLE_NODE_RESULT = 9;
+const MAX_MESSAGES_TO_FETCH = 500;
+const VERIFICATION_DELAY_MS = 250;
+const OAUTH_CONFIG_DELAY_MS = 100;
+
+const VALID_DKIM_DOMAINS = ["payments.interac.ca", "amazonses.com"] as const;
+const ETRANSFER_LABELS = {
+    INCOMING: 'INCOMING_ETRANSFERS',
+    PROCESSED: 'PROCESSED_ETRANSFERS',
+    UNVERIFIED: 'UNVERIFIED_ETRANSFERS',
+    UNPROCESSED: 'UNPROCESSED_ETRANSFERS'
+} as const;
 
 // Helper functions
 function getHtmlPart(parts: gmail_v1.Schema$MessagePart[]): gmail_v1.Schema$MessagePart | undefined {
@@ -37,8 +50,18 @@ function parseEtransferEmailFromDOM(document: any, log: Task["log"]): { refillid
 
     // Find element that contains REFILL using xpath
     const messageXpath = "//p[contains(translate(text(), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), 'refill')]";
-    const message = document.evaluate(messageXpath, document, null, 9, null).singleNodeValue.textContent.trim();
-    const amountText = document.evaluate("//*[contains(text(), '$')]", document, null, 9, null).singleNodeValue.textContent.trim();
+    // const message = document.evaluate(messageXpath, document, null, XPATH_SINGLE_NODE_RESULT, null).singleNodeValue.textContent.trim();
+    const messageNode = document.evaluate(messageXpath, document, null, XPATH_SINGLE_NODE_RESULT, null).singleNodeValue;
+    if (!messageNode?.textContent) {
+        throw 'No message node found';
+    }
+    const message = messageNode.textContent.trim();
+    // const amountText = document.evaluate("//*[contains(text(), '$')]", document, null, XPATH_SINGLE_NODE_RESULT, null).singleNodeValue.textContent.trim();
+    const amountNode = document.evaluate("//*[contains(text(), '$')]", document, null, XPATH_SINGLE_NODE_RESULT, null).singleNodeValue;
+    if (!amountNode?.textContent) {
+        throw 'No amount node found';
+    }
+    const amountText = amountNode.textContent.trim();
 
     // Make sure both are not the same one to prevent amounts being places in the message
     if ( message === amountText && typeof message === "string") {
@@ -57,15 +80,20 @@ function parseEtransferEmailFromDOM(document: any, log: Task["log"]): { refillid
         }
     }
 
-    if (refillid === undefined && refillid !== ""){
+    if (refillid === undefined || refillid !== ""){
         throw 'refillid is undefined';
     }
     log('debug', `refillid: ${refillid}`);
 
     // Parse amountText to get amount
-    amount = amountText.split('$')[1].split('(CAD')[0]?.trim();
+    // amount = amountText.split('$')[1].split('(CAD')[0]?.trim();
+    const dollarParts = amountText.split('$');
+    if (dollarParts.length < 2) {
+        throw 'No dollar sign found in amount text';
+    }
+    amount = dollarParts[1].split('(CAD')[0]?.trim();
 
-    if (amount === undefined && amount !==""){
+    if (amount === undefined || amount !==""){
         throw 'amount is undefined';
     }
     log('debug', `amount: ${amount}`);
@@ -126,8 +154,8 @@ class EtransferTask extends Task {
         // Verify etransfers
         for (let i = 0; i < etransfers.incoming.length; i++) {
             this.log('debug', `Verifying etransfer ${etransfers.incoming[i].id}`)
-            // Wait 0.25 second before verifying next etransfer
-            await new Promise(resolve => setTimeout(resolve, 250));
+            // Wait VERIFICATION_DELAY_MS second before verifying next etransfer
+            await new Promise(resolve => setTimeout(resolve, VERIFICATION_DELAY_MS));
             try {
                 const res = await this.verify(etransfers.incoming[i]);
                 if (!res) {
@@ -183,8 +211,9 @@ class EtransferTask extends Task {
     private async configure(config: { [key: string]: any; }) {
         this.log('debug', "Configuring etransfer processor")
         // wait for oauth2Client to be configured
+        // could infinite loop if never configured, however I don't see a good reason to add a timeout
         while (goauth.oauth2Client === null) {
-            await new Promise(resolve => setTimeout(resolve, 100));
+            await new Promise(resolve => setTimeout(resolve, OAUTH_CONFIG_DELAY_MS));
         }
         this.log('debug', "Oauth2Client configured")
         // Configure gmail
@@ -278,7 +307,7 @@ class EtransferTask extends Task {
         // Get email messages
         const resMessagesGet = await this.gmail!.users.messages.list({
             userId: 'me',
-            maxResults: 500,
+            maxResults: MAX_MESSAGES_TO_FETCH,
             labelIds: [this.labelIds!.incoming],
         } as gmail_v1.Params$Resource$Users$Messages$List);
         const potentialIncoming = resMessagesGet.data.messages;
@@ -322,8 +351,7 @@ class EtransferTask extends Task {
 
         const arcResult = authentication.arc.status.result
         const dkimdomains = authentication.dkim.results.map((result) => result.signingDomain)
-        const validDomains = ["payments.interac.ca", "amazonses.com"]
-        const dkdomainsIsValid = dkimdomains.every((domain) => validDomains.includes(domain))
+        const dkdomainsIsValid = dkimdomains.every((domain) => VALID_DKIM_DOMAINS.includes(domain))
 
         if (!(arcResult === 'pass' && dkdomainsIsValid)) {
             // Save the message to a file for auditing in __savePath/etransfer/unverified
