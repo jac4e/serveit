@@ -1,7 +1,13 @@
-import mongoose, { Model, Schema, Document } from 'mongoose';
-import { IRefillDocument, RefillMethods, RefillStatus } from 'typesit';
+import mongoose, { Model, Schema } from 'mongoose';
+import { IRefillDocument, LedgerType, RefillMethods, RefillStatus } from 'typesit';
 
 const schema = new Schema<IRefillDocument, Model<IRefillDocument>>({
+    type: {
+        type: String,
+        enum: [LedgerType.Refill],
+        required: true,
+        default: LedgerType.Refill,
+    },
     account: {
         type: String,
         trim: true,
@@ -12,7 +18,7 @@ const schema = new Schema<IRefillDocument, Model<IRefillDocument>>({
         type: String,
         trim: true,
         required: true,
-        enum: RefillMethods
+        enum: Object.values(RefillMethods)
     },
     amount: {
         type: String,
@@ -24,28 +30,26 @@ const schema = new Schema<IRefillDocument, Model<IRefillDocument>>({
         trim: true,
         required: true
     },
-    dateCreated: {
-        type: Date,
-        default: Date.now
-    },
-    dateUpdated: {
-        type: Date,
-        default: Date.now,
-    },
     reference: {
         type: String,
         trim: true,
-        unique: true
+        unique: true,
+        required: true
     },
     status: {
         type: String,
         trim: true,
         required: true,
-        enum: RefillStatus
+        enum: Object.values(RefillStatus)
     },
-    note: {
+    description: {
         type: String,
         trim: true
+    }
+}, {
+    timestamps: {
+        createdAt: 'createdAt',
+        updatedAt: 'updatedAt',
     }
 });
 
@@ -73,6 +77,13 @@ function transformDoc(doc) {
     }
     doc.id = doc._id.toString();
     doc.amount = BigInt(doc.amount);
+    doc.cost = BigInt(doc.cost);
+    if (doc.createdAt && !(doc.createdAt instanceof Date)) {
+        doc.createdAt = new Date(doc.createdAt);
+    }
+    if (doc.updatedAt && !(doc.updatedAt instanceof Date)) {
+        doc.updatedAt = new Date(doc.updatedAt);
+    }
     delete doc._id;
     delete doc.__v;
 }
