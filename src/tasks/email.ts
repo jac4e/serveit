@@ -1,13 +1,13 @@
 import nodemailer, { Transporter } from "nodemailer";
 import { IAccount, Roles } from "typesit";
-import accountService from '../account/index.js';
-import { __configPath } from "../../config/paths.js";
-import { getFileConfig } from "../../config/config.js";
-import logger from "../../core/logger/index.js";
+import accountService from '../services/account/index.js';
+import { __configPath } from "../config/paths.js";
+import { getFileConfig } from "../config/config.js";
+import logger from "../core/logger/index.js";
 import SMTPTransport from "nodemailer/lib/smtp-transport/index.js";
 import Mail from "nodemailer/lib/mailer/index.js";
-import goauth from "../../core/auth/google-oauth.js";
-import { EmailConfigFile } from "../../config/config.type.js";
+import goauth from "../core/auth/google-oauth.js";
+import { EmailConfigFile } from "../config/config.type.js";
 import { Auth, gmail_v1, google } from "googleapis";
 import Task from "./task.js";
 

@@ -2,7 +2,7 @@ import db from '../../../core/db/index.js';
 import accountService from '../../account/index.js';
 import { ITransaction, IAccount, IProduct, ITransactionDocument, ITransactionForm, ITransactionItem, TransactionType } from 'typesit';
 import logger from '../../../core/logger/index.js';
-import email from '../../tasks/email.js';
+import email from '../../../tasks/email.js';
 
 const Transaction = db.transaction;
 
@@ -11,7 +11,7 @@ async function create(transactionParam: ITransactionForm): Promise<void> {
     // this way proper invoices can still be generated
 
     // Check transaction type:
-    if (!Object.values(TransactionType).includes(transactionParam.type)) {
+    if (!Object.values(TransactionType).includes(transactionParam.transactionType)) {
         throw 'invalid transaction type'
     }
 
@@ -105,14 +105,14 @@ async function getByAccountId(accountid: IAccount['id']): Promise<ITransaction[]
 
 }
 
-async function getByType(type: ITransaction['type']): Promise<ITransaction[]> {
-    return await Transaction.find({type: type}).sort({
+async function getByType(transactionType: ITransaction['transactionType']): Promise<ITransaction[]> {
+    return await Transaction.find({transactionType: transactionType}).sort({
         date: -1
     }).lean<ITransaction[]>();
 }
 
-async function getByReason(reason: ITransaction['reason']): Promise<ITransaction[]>  {
-    return await Transaction.find({reason: reason}).sort({
+async function getByReason(reason: ITransaction['description']): Promise<ITransaction[]>  {
+    return await Transaction.find({description: reason}).sort({
         date: -1
     }).lean<ITransaction[]>();
 }

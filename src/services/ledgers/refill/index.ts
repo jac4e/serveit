@@ -1,11 +1,11 @@
-import { IRefill, IRefillForm, ITransactionForm, RefillMethods, RefillStatus, Roles, TransactionType } from "typesit";
-import db from "../../core/db/index.js";
-import email from "../tasks/email.js";
-import accountService from "../account/index.js";
+import { IRefill, IRefillForm, ITransactionForm, LedgerType, RefillMethods, RefillStatus, Roles, TransactionType } from "typesit";
+import db from "../../../core/db/index.js";
+import email from "../../../tasks/email.js";
+import accountService from "../../account/index.js";
 import transactionService from "../transactions/index.js";
 import { randomUUID } from "crypto";
 import Stripe from 'stripe';
-import { __envConfig } from '../../config/config.js';
+import { __envConfig } from '../../../config/config.js';
 
 const stripe = new Stripe(__envConfig.backend.stripeSecret);
 
@@ -15,7 +15,7 @@ async function getRefillHistory(id: string): Promise<IRefill[]> {
     return await Refill.find({
         account: id
     }).sort({
-        date: -1
+        createdAt: -1
     }).lean<IRefill[]>();
 }
 
@@ -26,9 +26,10 @@ async function create(data: IRefillForm): Promise<IRefill> {
     }
 
     const refill = new Refill(data);
+    refill.type = LedgerType.Refill;
     refill.status = RefillStatus.Pending;
-    refill.dateCreated = new Date();
-    refill.dateUpdated = new Date();
+    refill.createdAt = new Date();
+    refill.updatedAt = new Date();
 
     // Payment logic
     if (refill.method === RefillMethods.Stripe) {
@@ -87,11 +88,11 @@ async function create(data: IRefillForm): Promise<IRefill> {
     }).then(async () => {
         // Notify user of refill
         const subject = `Spendit - New Refill Requested`;
-        const message = `Hi ${refill.account},\n Your refill of ${refill.amount} on ${refill.dateCreated} with ${refill.method} has been created!`
+        const message = `Hi ${refill.account},\n Your refill of ${refill.amount} on ${refill.createdAt} with ${refill.method} has been created!`
         const account = await accountService.getById(refill.account);
         
-        email.send(account, 'Spendit - New Refill Requested', `A new refill of ${refill.amount} on ${refill.dateCreated} with ${refill.method} has been requested!`);
-        email.sendAll(Roles.Admin, 'New Pending Refill Requested', `A new refill of ${refill.amount} on ${refill.dateCreated} with ${refill.method} has been requested by ${account.username} <${account.email}>!`);
+        email.send(account, 'Spendit - New Refill Requested', `A new refill of ${refill.amount} on ${refill.createdAt} with ${refill.method} has been requested!`);
+        email.sendAll(Roles.Admin, 'New Pending Refill Requested', `A new refill of ${refill.amount} on ${refill.createdAt} with ${refill.method} has been requested by ${account.username} <${account.email}>!`);
         return;
     });
 
@@ -117,8 +118,8 @@ async function getById(id: string): Promise<IRefill> {
 async function updateById(id: string, data: Partial<IRefill>): Promise<IRefill> {
     data = {
         ...data,
-        dateUpdated: new Date()
-    }
+        updatedAt: new Date()
+    };
     const updatedData = await Refill.findByIdAndUpdate(id, data, {
         new: true
     }).lean<IRefill>();
@@ -130,7 +131,7 @@ async function updateById(id: string, data: Partial<IRefill>): Promise<IRefill> 
     // Email user
     const account = await accountService.getById(updatedData.account);
     // if (updatedData.status === RefillStatus.Complete && data.status != updatedData.status) {
-    //     email.send(account, 'Refill Request Completed', `Your refill of ${updatedData.amount} on ${updatedData.dateCreated} with ${updatedData.method} has been completed!`);
+    //     email.send(account, 'Refill Request Completed', `Your refill of ${updatedData.amount} on ${updatedData.createdAt} with ${updatedData.method} has been completed!`);
     //     // Create transaction
     //     const transaction: ITransactionForm = {
     //         accountid: updatedData.account,
@@ -140,14 +141,14 @@ async function updateById(id: string, data: Partial<IRefill>): Promise<IRefill> 
     //         products: [],
     //     }
     // } else if (updatedData.status === RefillStatus.Cancelled && data.status != updatedData.status) {
-    //     email.send(account, 'Refill Request Cancelled', `Your refill of ${updatedData.amount} on ${updatedData.dateCreated} with ${updatedData.method} has been cancelled!`);
+    //     email.send(account, 'Refill Request Cancelled', `Your refill of ${updatedData.amount} on ${updatedData.createdAt} with ${updatedData.method} has been cancelled!`);
     // } else if (updatedData.status === RefillStatus.Failed && data.status != updatedData.status) {
-    //     email.send(account, 'Refill Request Failed', `Your refill of ${updatedData.amount} on ${updatedData.dateCreated} with ${updatedData.method} has failed!`);
+    //     email.send(account, 'Refill Request Failed', `Your refill of ${updatedData.amount} on ${updatedData.createdAt} with ${updatedData.method} has failed!`);
     // } else {
-    //     email.send(account, 'Refill Request Updated', `Your refill of ${updatedData.amount} on ${updatedData.dateCreated} with ${updatedData.method} has been updated!`);
+    //     email.send(account, 'Refill Request Updated', `Your refill of ${updatedData.amount} on ${updatedData.createdAt} with ${updatedData.method} has been updated!`);
     // }
     // Email user
-    email.send(account, 'Refill Request Updated', `Your refill of ${updatedData.amount} on ${updatedData.dateCreated} with ${updatedData.method} has been updated.`);
+    email.send(account, 'Refill Request Updated', `Your refill of ${updatedData.amount} on ${updatedData.createdAt} with ${updatedData.method} has been updated.`);
     return updatedData;
 }
 
@@ -176,12 +177,13 @@ async function completeRefill(refillid: string, {amount, reference, note}: {amou
 
     // Create transaction
     const transaction: ITransactionForm = {
+        type: LedgerType.Transaction,
         accountId: refill.account,
-        type: TransactionType.Credit,
+        transactionType: TransactionType.Credit,
         total: String(refill.amount).replace('.', ''),
-        reason: `${refill.method} Refill: ${reference || refill.reference}`,
+        description: `${refill.method} Refill: ${reference || refill.reference}`,
         products: [],
-    }
+    };
 
     // Create transaction
     transactionService.create(transaction).catch(err => {
@@ -191,13 +193,13 @@ async function completeRefill(refillid: string, {amount, reference, note}: {amou
     // Update refill status
     refill.status = RefillStatus.Complete;
     refill.reference = reference || refill.reference;
-    refill.dateUpdated = new Date();
+    refill.updatedAt = new Date();
     refill.note = note;
     await refill.save();
 
     // Email user
     const account = await accountService.getById(refill.account);
-    email.send(account, 'Refill Request Completed', `Your refill of ${refill.amount} on ${refill.dateCreated} with ${refill.method} has been completed!`);
+    email.send(account, 'Refill Request Completed', `Your refill of ${refill.amount} on ${refill.createdAt} with ${refill.method} has been completed!`);
 }
 
 // async function failRefill(refillid: string, reference: string, note?: string): Promise<void> {
@@ -216,12 +218,12 @@ async function failRefill(refillid: string, {reference, note}: {reference?: stri
     refill.status = RefillStatus.Failed;
     refill.reference = reference || refill.reference;
     refill.note = note;
-    refill.dateUpdated = new Date();
+    refill.updatedAt = new Date();
     await refill.save();
 
     // Email user
     const account = await accountService.getById(refill.account);
-    email.send(account, 'Refill Request Failed', `Your refill of ${refill.amount} on ${refill.dateCreated} with ${refill.method} has failed!`);
+    email.send(account, 'Refill Request Failed', `Your refill of ${refill.amount} on ${refill.createdAt} with ${refill.method} has failed!`);
 }
 
 // async function cancelRefill(id: string, note?: string): Promise<void> {
@@ -237,7 +239,7 @@ async function cancelRefill(id: string, {note}: {note?: string} = {}): Promise<v
 
     // Email user
     const account = await accountService.getById(refill.account);
-    email.send(account, 'Refill Request Cancelled', `Your refill of ${refill.amount} on ${refill.dateCreated} with ${refill.method} has been cancelled!`);
+    email.send(account, 'Refill Request Cancelled', `Your refill of ${refill.amount} on ${refill.createdAt} with ${refill.method} has been cancelled!`);
 }
 
 function verifyStripeWebhook(sig: string, payload: string | Buffer): Stripe.Event {

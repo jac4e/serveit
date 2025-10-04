@@ -1,16 +1,16 @@
-import goauth from "../../core/auth/google-oauth.js";
+import goauth from "../core/auth/google-oauth.js";
 import Task from "./task.js";
 import { Auth, gmail_v1, google } from "googleapis";
 import { authenticate } from 'mailauth';
-import logger from '../../core/logger/index.js';
+import logger from '../core/logger/index.js';
 import jsdom from 'jsdom';
 import e from "express";
-import transactionService from "../ledgers/transactions/index.js";
+import transactionService from "../services/ledgers/transactions/index.js";
 import { ITransactionForm, TransactionType } from "typesit";
-import { __savePath } from "../../config/paths.js";
+import { __savePath } from "../config/paths.js";
 import { join, dirname } from 'path';
 import { existsSync, mkdirSync, readFileSync, statSync, readdirSync, writeFileSync } from 'fs';
-import refillService from '../refill/index.js';
+import refillService from '../services/ledgers/refill/index.js';
 
 // Constants
 const XPATH_SINGLE_NODE_RESULT = 9;

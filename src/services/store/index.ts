@@ -2,8 +2,8 @@ import db from '../../core/db/index.js';
 import { JwtPayload } from 'jsonwebtoken';
 import transactionService from '../ledgers/transactions/index.js';
 import accountService from '../account/index.js';
-import { ICartItem, ICartItemSerialized, ICartSerialized, IProduct, IProductDocument, IProductForm, isIProduct, ITransactionForm, ITransactionItem, ProductTypes, Roles, TransactionType } from 'typesit';
-import email from '../tasks/email.js';
+import { ICartItem, ICartItemSerialized, ICartSerialized, IProduct, IProductDocument, IProductForm, isIProduct, ITransactionForm, ITransactionItem, LedgerType, ProductTypes, Roles, TransactionType } from 'typesit';
+import email from '../../tasks/email.js';
 
 const Product = db.product;
 
@@ -114,9 +114,10 @@ async function purchaseCart(payload: JwtPayload, cartSerialized: ICartSerialized
     // }
 
     const transactionParams: ITransactionForm = {
+        type: LedgerType.Transaction,
         accountId: payload.sub,
-        type: TransactionType.Debit,
-        reason: 'Web Purchase',
+        transactionType: TransactionType.Debit,
+        description: 'Web Purchase',
         products: cart.map((cartItem: ICartItem): ITransactionItem => ({
             total: cartItem.total.toString(),
             amount: cartItem.amount.toString(),

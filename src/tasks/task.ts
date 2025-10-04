@@ -5,7 +5,7 @@
 //     start: () => void;
 //     stop: () => void;
 // }
-import logger from '../../core/logger/index.js';
+import logger from '../core/logger/index.js';
 
 export const tasks: Task[] = [];
 

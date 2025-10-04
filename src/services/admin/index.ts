@@ -1,7 +1,7 @@
 import db from '../../core/db/index.js';
 import transactionService from '../ledgers/transactions/index.js';
 import { ITransaction, ITransactionForm, Roles, TransactionType, IAccountStats, IFinanceStats, IInventoryStats, IRefillStats, IStoreStats, ITaskLean, ITransactionStats, RefillStatus, StatsDateRange, ProductTypes, IProduct } from 'typesit';
-import { tasks } from '../tasks/task.js';
+import { tasks } from '../../tasks/task.js';
 
 const Account = db.account
 const Product = db.product
@@ -9,7 +9,7 @@ const Transaction = db.transaction
 const Refill = db.refill
 
 async function createTransaction(transactionParam: ITransactionForm) {
-    transactionParam.reason = `Admin: ${transactionParam.reason}`;
+    transactionParam.description = `Admin: ${transactionParam.description}`;
     return transactionService.create(transactionParam).catch(err => {
         throw err;
     });
