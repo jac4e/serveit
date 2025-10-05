@@ -141,7 +141,7 @@ class RefillLedger extends Ledger<IRefill, IRefillForm> {
 
         refill.status = RefillStatus.Complete;
         refill.reference = reference || refill.reference;
-        refill.note = note;
+        refill.description = note;
         await refill.save();
 
         const account = await accountService.getById(refill.account);
@@ -172,7 +172,7 @@ class RefillLedger extends Ledger<IRefill, IRefillForm> {
 
         refill.status = RefillStatus.Failed;
         refill.reference = reference || refill.reference;
-        refill.note = note;
+        refill.description = note;
         await refill.save();
 
         const account = await accountService.getById(refill.account);
@@ -200,7 +200,7 @@ class RefillLedger extends Ledger<IRefill, IRefillForm> {
 
         refill.status = RefillStatus.Cancelled;
         refill.updatedAt = new Date();
-        refill.note = note;
+        refill.description = note;
         await refill.save();
 
         const account = await accountService.getById(refill.account);

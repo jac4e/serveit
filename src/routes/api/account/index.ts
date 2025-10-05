@@ -2,7 +2,7 @@ import express, { NextFunction, request, Response } from 'express';
 import expressJwt, { Request } from 'express-jwt';
 import Guard from 'express-jwt-permissions';
 import transactionLedger from '../../../services/ledgers/transactions/index.js';
-import { IAccountBaseForm, isIAccountBaseForm, IAccountSettingsForm, isIAccountSettingsForm, ICredentials, isICredentials, Roles, isIRefillForm, IRefillForm, RefillMethods, isIAccountPasswordForm } from 'typesit';
+import { IAccountBaseForm, isIAccountBaseForm, IAccountSettingsForm, isIAccountSettingsForm, ICredentials, isICredentials, Roles, isIRefillForm, IRefillForm, RefillMethods, isIAccountPasswordForm, IAccountPasswordForm, AccountFormTypes } from 'typesit';
 import accountService from '../../../services/account/index.js';
 import { randomUUID } from 'crypto'
 import refillLedger from '../../../services/ledgers/refill/index.js';
@@ -90,7 +90,7 @@ function getSelfTransactions(req, res, next) {
 
 function updateSelf(req, res, next) {
     const selfId = getIdFromPayload(req);
-    const type = req.body.type;
+    const type: AccountFormTypes = req.body.type;
     const form = req.body.accountForm;
     const currentPassword = req.body.currentPassword;
 
@@ -113,7 +113,7 @@ function updateSelf(req, res, next) {
         }
         if (type === 'password' && isIAccountPasswordForm(form)) {
             accountService.updatePasswordById(selfId,form.password).then(() => res.json({})).catch(err => next(err))
-        } else if (type === 'account' && isIAccountSettingsForm(form)) {
+        } else if (type === 'settings' && isIAccountSettingsForm(form)) {
             accountService.updateAccountById(selfId,form).then(() => res.json({})).catch(err => next(err))
         } else {
             throw 'Invalid update type'
