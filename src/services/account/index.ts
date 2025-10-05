@@ -3,7 +3,7 @@ import bcrypt from 'bcrypt';
 import { __envConfig } from '../../config/config.js';
 import db from '../../core/db/index.js';
 import { randomUUID } from 'crypto';
-import transactionService from '../ledgers/transactions/index.js';
+import transactionLedger from '../ledgers/transactions/index.js';
 import { zxcvbn, zxcvbnOptions } from '@zxcvbn-ts/core'
 import zxcvbnCommonPackage from '@zxcvbn-ts/language-common';
 import zxcvbnEnPackage from '@zxcvbn-ts/language-en';
@@ -176,7 +176,7 @@ async function create(accountParam: IAccountBaseForm): Promise<void> {
 async function getBalance(id: string): Promise<bigint> {
   // transaction based balance
   // logger.debug(`id: ${id}`)
-  return await transactionService.getBalanceByAccountId(id)
+  return await transactionLedger.getBalanceByAccountId(id)
   // logger.debug(res)
 }
 

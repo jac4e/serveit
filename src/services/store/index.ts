@@ -1,6 +1,6 @@
 import db from '../../core/db/index.js';
 import { JwtPayload } from 'jsonwebtoken';
-import transactionService from '../ledgers/transactions/index.js';
+import transactionLedger from '../ledgers/transactions/index.js';
 import accountService from '../account/index.js';
 import { ICartItem, ICartItemSerialized, ICartSerialized, IProduct, IProductDocument, IProductForm, isIProduct, ITransactionForm, ITransactionItem, LedgerType, ProductTypes, Roles, TransactionType } from 'typesit';
 import email from '../../tasks/email.js';
@@ -129,7 +129,7 @@ async function purchaseCart(payload: JwtPayload, cartSerialized: ICartSerialized
     };
 
     await accountService.pay(sum, payload.sub);
-    await transactionService.create(transactionParams);
+    await transactionLedger.createEntry(transactionParams);
 
     // for (const item of cart) {
     //     const productIndex = products.findIndex((product) => product.id === item.id);

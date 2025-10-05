@@ -1,11 +1,11 @@
 import express, { NextFunction, request, Response } from 'express';
 import expressJwt, { Request } from 'express-jwt';
 import Guard from 'express-jwt-permissions';
-import transactionService from '../../../services/ledgers/transactions/index.js';
+import transactionLedger from '../../../services/ledgers/transactions/index.js';
 import { IAccountBaseForm, isIAccountBaseForm, IAccountSettingsForm, isIAccountSettingsForm, ICredentials, isICredentials, Roles, isIRefillForm, IRefillForm, RefillMethods, isIAccountPasswordForm } from 'typesit';
 import accountService from '../../../services/account/index.js';
 import { randomUUID } from 'crypto'
-import refillService from '../../../services/ledgers/refill/index.js';
+import refillLedger from '../../../services/ledgers/refill/index.js';
 
 const router = express.Router();
 const guard = Guard({
@@ -85,7 +85,7 @@ function getSelfBalance(req, res, next) {
 
 function getSelfTransactions(req, res, next) {
     const selfId = getIdFromPayload(req);
-    transactionService.getByAccountId(selfId).then(resp => res.json(resp)).catch(err => next(err));
+    transactionLedger.listEntries({accountId: selfId}).then(resp => res.json(resp)).catch(err => next(err));
 }
 
 function updateSelf(req, res, next) {
@@ -123,7 +123,7 @@ function updateSelf(req, res, next) {
 
 function getSelfRefillHistory(req, res, next) {
     const selfId = getIdFromPayload(req);
-    refillService.getRefillHistory(selfId).then(resp => res.json(resp)).catch(err => next(err));
+    refillLedger.getRefillHistory(selfId).then(resp => res.json(resp)).catch(err => next(err));
 }
 
 function createSelfRefill(req, res, next) {
@@ -136,7 +136,7 @@ function createSelfRefill(req, res, next) {
     if (!isIRefillForm(data)) {
         throw 'request body is of wrong type, must be IRefillForm'
     }
-    refillService.create(data).then((resp) => res.json(resp)).catch(err => next(err));
+    refillLedger.createEntry(data).then((resp) => res.json(resp)).catch(err => next(err));
 
 }
 
@@ -144,7 +144,7 @@ function cancelRefill(req, res, next) {
     const selfId = getIdFromPayload(req);
     const refillId = req.params.refillId;
     const note = 'User: Refill cancelled';
-    refillService.cancelRefill(refillId, {note: note}).then(() => res.json({})).catch(err => next(err));
+    refillLedger.cancelRefill(refillId, {note: note}).then(() => res.json({})).catch(err => next(err));
 }
 
 // Private routes
@@ -201,7 +201,7 @@ function getBalance(req, res, next) {
 }
 
 function getTransactions(req, res, next) {
-    transactionService.getById(req.params['accountId']).then(resp => res.json(resp)).catch(err => next(err));
+    transactionLedger.listEntries({accountId:req.params['accountId']}).then(resp => res.json(resp)).catch(err => next(err));
 }
 
 function getIdFromPayload(req: Request): string {

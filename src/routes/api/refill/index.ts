@@ -1,7 +1,7 @@
 import express from 'express';
 import Guard from 'express-jwt-permissions';
 import { isIRefill, isIRefillForm, RefillStatus, Roles } from 'typesit';
-import refillService from '../../../services/ledgers/refill/index.js';
+import refillLedger from '../../../services/ledgers/refill/index.js';
 import logger from '../../../core/logger/index.js';
 import bodyParser from 'body-parser';
 
@@ -40,16 +40,16 @@ function create(req, res, next) {
     if (!isIRefillForm(data)) {
         throw 'request body is of wrong type, must be IRefillForm'
     }
-    refillService.create(data).then((resp) => res.json(resp)).catch(err => next(err));
+    refillLedger.createEntry(data).then((resp) => res.json(resp)).catch(err => next(err));
 }
 
 function getAll(req, res, next) {
-    refillService.getAll().then((resp) => res.json(resp)).catch(err => next(err));
+    refillLedger.listEntries({}).then((resp) => res.json(resp)).catch(err => next(err));
 }
 
 function getById(req, res, next) {
     const id = req.params.refillId;
-    refillService.getById(id).then((resp) => res.json(resp)).catch(err => next(err));
+    refillLedger.getEntry(id).then((resp) => res.json(resp)).catch(err => next(err));
 }
 
 function updateById(req, res, next) {
@@ -58,34 +58,34 @@ function updateById(req, res, next) {
     // Check if body is an IRefill type
     if (!isIRefill(data))
         throw 'request body is of wrong type, must be IRefill'
-    refillService.updateById(id, data).then((resp) => res.json(resp)).catch(err => next(err));
+    refillLedger.updateEntry(id, data).then((resp) => res.json(resp)).catch(err => next(err));
 }
 
 function approveRefill(req, res, next) {
     const id = req.params.refillId;
     const note = 'Admin: Refill approved';
-    refillService.completeRefill(id, {note: note}).then((resp) => res.json(resp)).catch(err => next(err));
+    refillLedger.completeRefill(id, {note: note}).then((resp) => res.json(resp)).catch(err => next(err));
 }
 
 function cancelRefill(req, res, next) {
     const id = req.params.refillId;
     const note = 'Admin: Refill cancelled';
-    refillService.cancelRefill(id, {note: note}).then((resp) => res.json(resp)).catch(err => next(err));
+    refillLedger.cancelRefill(id, {note: note}).then((resp) => res.json(resp)).catch(err => next(err));
 }
 
 function failRefill(req, res, next) {
     const id = req.params.refillId;
     const note = 'Admin: Refill failed';
-    refillService.failRefill(id, {note: note}).then((resp) => res.json(resp)).catch(err => next(err));
+    refillLedger.failRefill(id, {note: note}).then((resp) => res.json(resp)).catch(err => next(err));
 }
 
 function getRefillHistory(req, res, next) {
     const id = req.params.accountId;
-    refillService.getRefillHistory(id).then((resp) => res.json(resp)).catch(err => next(err));
+    refillLedger.getRefillHistory(id).then((resp) => res.json(resp)).catch(err => next(err));
 }
 
 function stripeWebhook(req, res) {
-    const event = refillService.verifyStripeWebhook(req.headers['stripe-signature'], req.rawBody)
+    const event = refillLedger.verifyStripeWebhook(req.headers['stripe-signature'], req.rawBody)
     
     logger.log('debug', `Stripe Webhook received`, {section: 'stripeWebhook'});
     switch (event.type) {
@@ -111,7 +111,7 @@ function stripeWebhook(req, res) {
             if (!amount) {
                 // No amount in metadata
                 logger.error(`No amount in metadata for session ${session.id}`, {section: 'stripeWebhook'});
-                refillService.failRefill(session.client_reference_id, {reference: session.id, note: 'Stripe: No amount in metadata'}).then(() => {
+                refillLedger.failRefill(session.client_reference_id, {reference: session.id, note: 'Stripe: No amount in metadata'}).then(() => {
                     logger.log('info', `Refill ${session.client_reference_id} was failed`, {section: 'stripeWebhook'});
                 }).catch(err => {
                     logger.error(`Refill ${session.client_reference_id} failed to fail`, {section: 'stripeWebhook'});
@@ -124,7 +124,7 @@ function stripeWebhook(req, res) {
 
             // Fulfill the purchase...
             const note = `Stripe: ${event.type}`;
-            refillService.completeRefill(session.client_reference_id, {amount: BigInt(amount), reference: session.id, note: note}).then(() => {
+            refillLedger.completeRefill(session.client_reference_id, {amount: BigInt(amount), reference: session.id, note: note}).then(() => {
                 logger.log('info', `Refill ${session.client_reference_id} was completed`, {section: 'stripeWebhook'});
             }).catch(err => {
                 logger.error(`Refill ${session.client_reference_id} failed to complete`, {section: 'stripeWebhook'});
@@ -148,7 +148,7 @@ function stripeWebhook(req, res) {
 
             // Fail the purchase...
             const note = `Stripe: ${event.type}`;
-            refillService.failRefill(session.client_reference_id, {reference: session.id}).then(() => {
+            refillLedger.failRefill(session.client_reference_id, {reference: session.id}).then(() => {
                 logger.log('info', `Refill ${session.client_reference_id} was failed`, {section: 'stripeWebhook'});
             }).catch(err => {
                 logger.error(`Refill ${session.client_reference_id} failed to fail`, {section: 'stripeWebhook'});

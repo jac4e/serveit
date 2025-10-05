@@ -1,137 +1,160 @@
 import db from '../../../core/db/index.js';
 import accountService from '../../account/index.js';
-import { ITransaction, IAccount, IProduct, ITransactionDocument, ITransactionForm, ITransactionItem, TransactionType } from 'typesit';
+import { ITransaction, ITransactionForm, LedgerType, TransactionType, IAccount } from 'typesit';
 import logger from '../../../core/logger/index.js';
 import email from '../../../tasks/email.js';
+import Ledger, { LedgerContext, LedgerListCriteria } from '../ledger.js';
+// import type { LedgerHandler, LedgerHandlerContext, LedgerListCriteria } from '../index.js';
 
 const Transaction = db.transaction;
 
-async function create(transactionParam: ITransactionForm): Promise<void> {
-    // should store entire account and products in transaction incase product or user is deleted
-    // this way proper invoices can still be generated
-
-    // Check transaction type:
-    if (!Object.values(TransactionType).includes(transactionParam.transactionType)) {
-        throw 'invalid transaction type'
+class TransactionLedger extends Ledger<ITransaction, ITransactionForm> {
+    protected type = LedgerType.Transaction;
+    constructor() {
+        super();
     }
 
-    // Check if account valid
-    const account = await accountService.getById(transactionParam.accountId).catch(err => {
-        throw err;
-    });
+    protected async create(form: ITransactionForm, context?: LedgerContext): Promise<ITransaction> {
+        const account = await accountService.getById(form.accountId);
 
-    let transaction = new Transaction();
+        const doc = new Transaction(form);
+        await doc.save();
 
-    transaction.set(transactionParam);
-    await transaction.save()
-    // logger.transaction(transaction.toJSON())
-    logger.log('info', `Transaction created: ${transaction.id}`, {section: 'transaction',})
-
-    // Notify account of transaction
-    // Temporary text based
-    const subject = `Spendit - Transaction Receipt`;
-    // Date
-    // Transaction ID
-    // Account ID
-    // Type
-    // Reason
-    // Products (table)
-    // Total
-    const productsList = transaction.products.map(item => `\t${item.name}\t${item.description ?? 'N/A'}\t${item.amount}\t${item.price}\t${item.total}`).join('\n')
-    const productTable = `\tName\tDescription\tQuantity\tUnit Price\tAmount\n${productsList}\n\tTotal:${transaction.total}`
-    const message = `Date: ${transaction.date}\nTransaction ID: ${transaction.id}\nAccount ID: ${transaction.accountId}\nType: ${transaction.type}\nReason: ${transaction.reason}\nProducts:\n${productTable}`
-    email.send(account, subject, message)
-}
-
-async function getAll(): Promise<ITransaction[]> {
-    return await Transaction.find({}).sort({
-        date: -1
-    }).lean<ITransaction[]>();
-}
-
-
-async function getById(id: ITransaction['id']): Promise<ITransaction> {
-    // logger.debug(`get trans by id: ${id}`)
-    const transaction = await Transaction.findById(id).lean<ITransaction | null>();
-    if (transaction === null){
-        throw 'transaction not found'
-    }
-    return transaction;
-}
-
-async function getByDate(date) {
-
-}
-
-async function getBalanceByAccountId(accountid: IAccount['id']): Promise<bigint> {
-    const balance = await Transaction.aggregate<{_id: null, balance: number}>([{
-        $match: {
-            accountid: accountid
+        const saved = await Transaction.findById(doc._id).lean<ITransaction | null>();
+        if (!saved) {
+            throw new Error('Transaction not found after creation');
         }
-    }, {
-        $group: {
-            _id: null,
-            balance: {
-                $sum: {
-                    $cond: [{
-                        $eq: ['$type', 'credit']
-                    }, {
-                        '$toLong': '$total'
-                    }, {
-                        $multiply: [{
-                            '$toLong': '$total'
-                        }, -1]
-                    }]
+
+        logger.info('Transaction created', {
+            section: 'transaction',
+            transactionId: saved.id,
+            accountId: saved.accountId,
+            actorId: context?.actorId,
+        });
+
+        notifyTransactionCreated(account, saved);
+
+        return saved;
+    }
+
+    protected async getById(id: ITransaction['id'], context?: LedgerContext): Promise<ITransaction> {
+        const transaction = await Transaction.findById(id).lean<ITransaction | null>();
+        if (!transaction) {
+            throw new Error('Transaction not found');
+        }
+        return transaction;
+    }
+
+    protected async list(criteria: LedgerListCriteria = {}, context?: LedgerContext): Promise<ITransaction[]> {
+        const query = buildListQuery(criteria);
+        let cursor = Transaction.find(query).sort({ createdAt: -1 });
+        if (criteria.limit) {
+            cursor = cursor.limit(criteria.limit);
+        }
+        return await cursor.lean<ITransaction[]>();
+    }
+
+    protected async getByAccountId(accountId: string, context?: LedgerContext): Promise<ITransaction[]> {
+        return this.list({ accountId }, context);
+    }
+
+    async getBalanceByAccountId(accountId: string, context?: LedgerContext): Promise<bigint> {
+        const balance = await Transaction.aggregate<{ balance: string }>([
+            {
+                $match: {
+                    accountId,
+                }
+            },
+            {
+                $group: {
+                    _id: null,
+                    balance: {
+                        $sum: {
+                            $cond: [
+                                { $eq: ['$transactionType', TransactionType.Credit] },
+                                { $toLong: '$total' },
+                                {
+                                    $multiply: [
+                                        { $toLong: '$total' },
+                                        -1
+                                    ]
+                                }
+                            ]
+                        }
+                    }
                 }
             }
+        ]);
+
+        if (!balance.length) {
+            return 0n;
         }
-    }])
 
-    // if length of balance is 0, that means there are no transactions in the database for this account
-    // balance defaults to 0 in this case
-    if (balance.length === 0){
-        return BigInt(0);
+        return BigInt(balance[0].balance);
     }
-    return BigInt(balance[0].balance);
+
+    protected supports(form: unknown): form is ITransactionForm {
+        return Boolean(form && typeof (form as ITransactionForm).transactionType === 'string');
+    }
 }
 
-async function getByAccountId(accountid: IAccount['id']): Promise<ITransaction[]> {
-    // logger.debug(`get trans by id: ${accountid}`);
-    return await Transaction.find({
-        accountid: accountid
-    }).sort({
-        date: -1
-    }).lean<ITransaction[]>();
+function buildListQuery(criteria: LedgerListCriteria): Record<string, unknown> {
+    const query: Record<string, unknown> = {};
 
+    if (criteria.accountId) {
+        query.accountId = criteria.accountId;
+    }
+
+    if (criteria.status) {
+        const status = Array.isArray(criteria.status) ? criteria.status : [criteria.status];
+        const transactionTypes = status.filter((value): value is TransactionType => Object.values(TransactionType).includes(value as TransactionType));
+        if (transactionTypes.length === 1) {
+            query.transactionType = transactionTypes[0];
+        } else if (transactionTypes.length > 1) {
+            query.transactionType = { $in: transactionTypes };
+        }
+    }
+
+    if (criteria.dateRange?.from || criteria.dateRange?.to) {
+        const dateClause: Record<string, Date> = {};
+        if (criteria.dateRange.from) {
+            dateClause.$gte = criteria.dateRange.from;
+        }
+        if (criteria.dateRange.to) {
+            dateClause.$lte = criteria.dateRange.to;
+        }
+        query.createdAt = dateClause;
+    }
+
+    return query;
 }
 
-async function getByType(transactionType: ITransaction['transactionType']): Promise<ITransaction[]> {
-    return await Transaction.find({transactionType: transactionType}).sort({
-        date: -1
-    }).lean<ITransaction[]>();
+function notifyTransactionCreated(account: IAccount, transaction: ITransaction): void {
+    const subject = 'Spendit - Transaction Receipt';
+    const productsList = transaction.products.map((item) => `\t${item.name}\t${item.description ?? 'N/A'}\t${item.amount}\t${item.price}\t${item.total}`).join('\n');
+    const productTable = productsList.length
+        ? `\tName\tDescription\tQuantity\tUnit Price\tAmount\n${productsList}\n\tTotal:${transaction.total}`
+        : '\tNo line items provided';
+    const message = `Date: ${transaction.createdAt.toISOString()}\nTransaction ID: ${transaction.id}\nAccount ID: ${transaction.accountId}\nType: ${transaction.transactionType}\nDescription: ${transaction.description ?? ''}\nProducts:\n${productTable}`;
+    email.send(account, subject, message);
 }
 
-async function getByReason(reason: ITransaction['description']): Promise<ITransaction[]>  {
-    return await Transaction.find({description: reason}).sort({
-        date: -1
-    }).lean<ITransaction[]>();
+function notifyTransactionUpdated(account: IAccount, transaction: ITransaction): void {
+    const subject = 'Spendit - Transaction Updated';
+    const productsList = transaction.products.map((item) => `\t${item.name}\t${item.description ?? 'N/A'}\t${item.amount}\t${item.price}\t${item.total}`).join('\n');
+    const productTable = productsList.length
+        ? `\tName\tDescription\tQuantity\tUnit Price\tAmount\n${productsList}\n\tTotal:${transaction.total}`
+        : '\tNo line items provided';
+    const message = `Date: ${transaction.createdAt.toISOString()}\nTransaction ID: ${transaction.id}\nAccount ID: ${transaction.accountId}\nType: ${transaction.transactionType}\nDescription: ${transaction.description ?? ''}\nProducts:\n${productTable}`;
+    email.send(account, subject, message);
 }
 
-// async function getByProduct(productid: IProduct['id']): Promise<ITransaction[]>  {
-//     return await Transaction.find({reason: reason}).sort({
-//         date: -1
-//     }).lean<ITransaction[]>();
-// }
+// Create singleton instance
+const transactionLedger = new TransactionLedger();
 
+// Exports for backward compatibility with the old API
+export {
+    transactionLedger as default,
+    transactionLedger as instance,
+};
 
-// async function getByAmount(amount) {
-
-// }
-
-export default {
-    create,
-    getAll,
-    getById,
-    getByAccountId,
-    getBalanceByAccountId
-}
