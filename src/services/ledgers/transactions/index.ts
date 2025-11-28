@@ -15,8 +15,6 @@ class TransactionLedger extends Ledger<ITransaction, ITransactionForm> {
     }
 
     protected async create(form: ITransactionForm, context?: LedgerContext): Promise<ITransaction> {
-        const account = await accountService.getById(form.accountId);
-
         const doc = new Transaction(form);
         await doc.save();
 
@@ -25,16 +23,20 @@ class TransactionLedger extends Ledger<ITransaction, ITransactionForm> {
             throw new Error('Transaction not found after creation');
         }
 
+        return saved;
+    }
+
+    protected override async afterCreate(transaction: ITransaction, context?: LedgerContext): Promise<void> {
+        const account = await accountService.getById(transaction.accountId);
+
         logger.info('Transaction created', {
             section: 'transaction',
-            transactionId: saved.id,
-            accountId: saved.accountId,
+            transactionId: transaction.id,
+            accountId: transaction.accountId,
             actorId: context?.actorId,
         });
 
-        notifyTransactionCreated(account, saved);
-
-        return saved;
+        notifyTransactionCreated(account, transaction);
     }
 
     protected async getById(id: ITransaction['id'], context?: LedgerContext): Promise<ITransaction> {
@@ -131,16 +133,6 @@ function buildListQuery(criteria: LedgerListCriteria): Record<string, unknown> {
 
 function notifyTransactionCreated(account: IAccount, transaction: ITransaction): void {
     const subject = 'Spendit - Transaction Receipt';
-    const productsList = transaction.products.map((item) => `\t${item.name}\t${item.description ?? 'N/A'}\t${item.amount}\t${item.price}\t${item.total}`).join('\n');
-    const productTable = productsList.length
-        ? `\tName\tDescription\tQuantity\tUnit Price\tAmount\n${productsList}\n\tTotal:${transaction.total}`
-        : '\tNo line items provided';
-    const message = `Date: ${transaction.createdAt.toISOString()}\nTransaction ID: ${transaction.id}\nAccount ID: ${transaction.accountId}\nType: ${transaction.transactionType}\nDescription: ${transaction.description ?? ''}\nProducts:\n${productTable}`;
-    email.send(account, subject, message);
-}
-
-function notifyTransactionUpdated(account: IAccount, transaction: ITransaction): void {
-    const subject = 'Spendit - Transaction Updated';
     const productsList = transaction.products.map((item) => `\t${item.name}\t${item.description ?? 'N/A'}\t${item.amount}\t${item.price}\t${item.total}`).join('\n');
     const productTable = productsList.length
         ? `\tName\tDescription\tQuantity\tUnit Price\tAmount\n${productsList}\n\tTotal:${transaction.total}`

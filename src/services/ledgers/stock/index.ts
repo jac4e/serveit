@@ -58,6 +58,95 @@ class StockLedger extends Ledger<IStockEntry, IStockEntryForm> {
         return StockEntry.find({ productId }).sort({ createdAt: -1 }).lean<IStockEntry[]>();
     }
 
+    async getCostById(productId: string, context?: LedgerContext): Promise<ICoin> {
+        const entries = await this.getByProductId(productId);
+        const layers: Array<{ qty: bigint, unitCost: ICoin }> = [];
+        let totalCost = 0n;
+
+        for (const entry of entries) {
+            const delta = BigInt(entry.delta);
+            
+            if (delta > 0) {
+                // Purchase or positive adjustment creates a new layer
+                layers.push({ qty: delta, unitCost: entry.cost || 0n });
+            } else if (delta < 0) {
+                // Sale or negative adjustment consumes from oldest layers
+                let remainingQty = -delta;
+                while (remainingQty > 0n && layers.length > 0) {
+                    const oldestLayer = layers[0];
+                    if (oldestLayer.qty <= remainingQty) {
+                        // Consume entire layer
+                        remainingQty -= oldestLayer.qty;
+                        totalCost += oldestLayer.qty * oldestLayer.unitCost;
+                        layers.shift();
+                    } else {
+                        // Partially consume layer
+                        oldestLayer.qty -= remainingQty;
+                        totalCost += remainingQty * oldestLayer.unitCost;
+                        remainingQty = 0n;
+                    }
+                }
+            }
+        }
+
+        return totalCost;
+    }
+
+    // Returns a map of all product IDs to their current stock balances and costs
+    async getInventory(context?: LedgerContext): Promise<Map<IProduct['id'], { stock: IQuantity, cost: ICoin }>> {
+        const entries = await StockEntry.find({}).lean<IStockEntry[]>();
+        const inventory = new Map<IProduct['id'], { stock: IQuantity, cost: ICoin }>();
+        
+        for (const productId of new Set(entries.map(e => e.productId))) {
+            const layers: Array<{ qty: bigint, unitCost: ICoin }> = [];
+            let totalCost = 0n;
+            let stock = 0n;
+            
+            // Process entries for this product in chronological order
+            const productEntries = entries
+                .filter(e => e.productId === productId)
+                .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+
+            for (const entry of productEntries) {
+                const delta = BigInt(entry.delta);
+                stock += delta;
+                
+                if (delta > 0) {
+                    layers.push({ qty: delta, unitCost: entry.cost || 0n });
+                } else if (delta < 0) {
+                    let remainingQty = -delta;
+                    while (remainingQty > 0n && layers.length > 0) {
+                        const oldestLayer = layers[0];
+                        if (oldestLayer.qty <= remainingQty) {
+                            remainingQty -= oldestLayer.qty;
+                            totalCost += oldestLayer.qty * oldestLayer.unitCost;
+                            layers.shift();
+                        } else {
+                            oldestLayer.qty -= remainingQty;
+                            totalCost += remainingQty * oldestLayer.unitCost;
+                            remainingQty = 0n;
+                        }
+                    }
+                }
+            }
+            
+            inventory.set(productId, { stock, cost: totalCost });
+        }
+        
+        return inventory;
+    }
+
+    protected override async afterCreate(entry: IStockEntry, context: LedgerContext | undefined): Promise<void> {
+        const balance = await this.getBalanceByProductId(entry.productId);
+        if (balance <= 0n) {
+            logger.warn('Product is out of stock', {
+                section: 'stock',
+                productId: entry.productId,
+                balance: balance.toString()
+            });
+        }
+    }
+
     protected supports(form: unknown): form is IStockEntryForm {
         return Boolean(form && typeof (form as IStockEntryForm).productId === 'string');
     }

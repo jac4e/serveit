@@ -24,7 +24,7 @@ const transactionItemSchema = new Schema({
     }
 }, { _id: false });
 
-const schema = new Schema<ITransactionDocument, Model<ITransactionDocument>>({
+export const TransactionSchema = new Schema<ITransactionDocument, Model<ITransactionDocument>>({
     type: {
         type: String,
         enum: [LedgerType.Transaction],
@@ -64,17 +64,17 @@ const schema = new Schema<ITransactionDocument, Model<ITransactionDocument>>({
     }
 });
 
-schema.index({ accountId: 1 });
-schema.index({ accountId: 1, transactionType: 1 });
-schema.index({ transactionType: 1 });
-schema.index({ createdAt: 1 });  
+TransactionSchema.index({ accountId: 1 });
+TransactionSchema.index({ accountId: 1, transactionType: 1 });
+TransactionSchema.index({ transactionType: 1 });
+TransactionSchema.index({ createdAt: 1 });
 
-schema.set('toJSON', {
+TransactionSchema.set('toJSON', {
     virtuals: true,
     transform: transformDoc
 })
 
-schema.post(['find', 'findOne', 'findOneAndUpdate'], function (res) {
+TransactionSchema.post(['find', 'findOne', 'findOneAndUpdate'], function (res) {
     if (!this.mongooseOptions().lean) {
         return;
     }
@@ -101,4 +101,4 @@ function transformDoc(doc) {
     delete doc.__v;
 }
 
-export default mongoose.model('Transaction', schema);
+export default mongoose.model('Transaction', TransactionSchema);

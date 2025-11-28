@@ -40,13 +40,6 @@ const schema = new mongoose.Schema<IProductDocument, Model<IProductDocument>>({
         type: String,
         required: true
     },
-    stock: {
-        type: String,
-        required: function (this: IProductDocument) {
-            return this.type === ProductTypes.Stock;
-        },
-        default: undefined
-    },
     order: {
         type: orderSchema,
         required: function (this: IProductDocument) {

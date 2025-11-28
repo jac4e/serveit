@@ -2,6 +2,8 @@ import db from '../../core/db/index.js';
 import transactionLedger from '../ledgers/transactions/index.js';
 import { ITransaction, ITransactionForm, Roles, TransactionType, IAccountStats, IFinanceStats, IInventoryStats, IRefillStats, IStoreStats, ITaskLean, ITransactionStats, RefillStatus, StatsDateRange, ProductTypes, IProduct } from 'typesit';
 import { tasks } from '../../tasks/task.js';
+import { LedgerListCriteria } from '../ledgers/ledger.js';
+import { stockLedger } from '../ledgers/index.js';
 
 const Account = db.account
 const Product = db.product
@@ -22,7 +24,6 @@ async function getAllTransactions() {
 // Statistics functions
 // All these functions need improving as they take like one second to respond I think its the reduce?
 
-
 async function getFinanceStats(dateOption: StatsDateRange): Promise<IFinanceStats> {
     // Turn dateOption into a date range
     const endDate = new Date();
@@ -39,49 +40,53 @@ async function getFinanceStats(dateOption: StatsDateRange): Promise<IFinanceStat
         startDate.setFullYear(endDate.getFullYear() - 1);
     }
 
-    const dateQuery = dateOption === StatsDateRange.All ? {} : { date: { $gte: startDate, $lt: endDate } };
-
-    const stats = await Transaction.aggregate([
-        { $match: { ...dateQuery } },
-        {
-          $group: {
-            _id: '$type',
-            total: { $sum: '$total' }
-          }
-        }
-      ]);
+    const query: LedgerListCriteria = dateOption === StatsDateRange.All ? {} : { dateRange: { from: startDate, to: endDate } };
+    const transactions = await transactionLedger.listEntries(query);
 
     let totalCredit = 0n;
     let revenue = 0n;
 
-    for (const stat of stats) {
-        if (stat._id === TransactionType.Credit) {
-        totalCredit = BigInt(stat.total);
-        } else if (stat._id === TransactionType.Debit) {
-        revenue = BigInt(stat.total);
+    for (const transaction of transactions) {
+        if (transaction.transactionType === TransactionType.Credit) {
+            totalCredit += BigInt(transaction.total);
+        } else if (transaction.transactionType === TransactionType.Debit) {
+            revenue += BigInt(transaction.total);
         }
     }
 
     const creditBalance = totalCredit - revenue;
+
+
     const costOfGoodsSold = 0n;
     
     const profit = revenue - costOfGoodsSold;
-    return { totalCredit: Number(totalCredit)/100, revenue: Number(revenue)/100, creditBalance: Number(creditBalance)/100, costOfGoodsSold: Number(costOfGoodsSold)/100, profit: Number(profit)/100 };
+    return { 
+        totalCredit: Number(totalCredit)/100, 
+        revenue: Number(revenue)/100, 
+        creditBalance: Number(creditBalance)/100, 
+        costOfGoodsSold: Number(costOfGoodsSold)/100, 
+        profit: Number(profit)/100 
+    };
 }
 
 async function getInventoryStats(): Promise<IInventoryStats> {
     // Generate inventory stats
     // Total products
     const total = await Product.countDocuments({ type: ProductTypes.Stock });
-    // In stock products
-    const inStock = await Product.countDocuments({ type: ProductTypes.Stock, stock: { $gt: 0 } });
-    // Out of stock products
-    const outOfStock = await Product.countDocuments({ type: ProductTypes.Stock, stock: 0 });
+    
+    const inventory = await stockLedger.getInventory();
+    console.log(inventory);
+    // In-stock products
+    const inStock = Array.from(inventory.entries()).filter(([_, product]) => product.stock > 0n).length;
+    // Out-of-stock products
+    const outOfStock = Array.from(inventory.entries()).filter(([_, product]) => product.stock <= 0n).length;
+
     // Book value
-    const bookValue = 0;
+    const bookValue = Number(Array.from(inventory.entries()).reduce((acc, [_, product]) => acc + product.cost, 0n)) / 100;
+
     // Retail value
     const retailValue = Number(await Product.find<IProduct<ProductTypes.Stock>>({ type: ProductTypes.Stock }).then(products => {
-        return products.reduce((acc, product) => acc + BigInt(product.price) * BigInt(product.stock), 0n);
+        return products.reduce((acc, product) => acc + BigInt(product.price) * BigInt(inventory.get(product.id)?.stock || 0n), 0n);
     })) / 100;
     return { total: total, inStock: inStock, outOfStock: outOfStock, bookValue: bookValue, retailValue: retailValue };
 }

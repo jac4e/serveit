@@ -82,7 +82,7 @@ async function purchaseCart(payload: JwtPayload, cartSerialized: ICartSerialized
             throw `Product with id: ${product.id} could not be found in cart`;
         }
 
-        if (isIProduct(product, ProductTypes.Stock) && BigInt(cartItem.amount) > BigInt(product.stock)) {
+        if (isIProduct(product, ProductTypes.Stock) && BigInt(cartItem.amount) > BigInt(product.stock.amount)) {
             throw `Product ${product.name} does not have enough stock left`;
         }
         
@@ -148,8 +148,8 @@ async function purchaseCart(payload: JwtPayload, cartSerialized: ICartSerialized
     for (const item of cart) {
         // Update stock
         if (isIProduct(item, ProductTypes.Stock)) {
-            item.stock = item.stock - item.amount;
-            if (item.stock === 0n) {
+            item.stock.amount = item.stock.amount - item.amount;
+            if (item.stock.amount === 0n) {
                 const subject = `Spendit - ${item.name} is Out of Stock`;
                 const message = `Hi Admins,\nThe last ${item.name} has just been purchased.`;
                 await email.sendAll(Roles.Admin, subject, message);

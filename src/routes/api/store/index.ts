@@ -1,7 +1,8 @@
 import express from 'express';
 import Guard from 'express-jwt-permissions';
-import { isICartSerialized, isIProduct, isIProductForm, Roles } from 'typesit';
+import { isICartSerialized, isIProduct, isIProductForm, Roles, HTTP, IProductForm, ICartSerialized, isHTTP, ProductTypes } from 'typesit';
 import storeService from '../../../services/store/index.js';
+import logger from '../../../core/logger/index.js';
 
 const router = express.Router();
 const guard = Guard({
@@ -25,8 +26,8 @@ function getProducts(req, res, next) {
 }
 
 function createProduct(req, res, next) {
-    // Check if body is an IProductForm type
-    const data = req.body;
+    // Check if body is an HTTP<IProductForm> type
+    const data: HTTP<IProductForm> = req.body;
     // logger.debug(data)
     if(!isIProductForm(data)){
         // logger.debug(data)
@@ -39,10 +40,33 @@ function createProduct(req, res, next) {
 
 function updateProductById(req, res, next) {
     const data = req.body;
-    if(!isIProductForm(data)){
+
+    if(!isHTTP<IProductForm>(data)){
+        throw 'request body is of wrong type, must be HTTP<IProductForm>'
+    }
+
+    const deserializedData: IProductForm = {
+        name: data.name,
+        price: BigInt(data.price),
+        type: data.type,
+        category: data.category,
+        description: data.description,
+        image: data.image,
+    };
+    
+    if(deserializedData.type == ProductTypes.Order) {
+        deserializedData.order = typeof data.order === 'object' && data.order ? {
+            supplier: data.order.supplier,
+            minimum: BigInt(data.order.minimum),
+        } : undefined
+    }
+
+    // Check if deserialization worked
+    if(!isIProductForm(deserializedData)){
+        logger.debug(deserializedData);
         throw 'request body is of wrong type, must be IProductForm'
     }
-    storeService.updateProductById(req.params['productId'],data)
+    storeService.updateProductById(req.params['productId'],deserializedData)
         .then(() => res.json({}))
         .catch(err => next(err))
 }
@@ -61,7 +85,7 @@ function deleteProductById(req, res, next) {
 
 function purchase(req, res, next) {
     // logger.debug("purchasing")
-    const data = req.body;
+    const data: HTTP<ICartSerialized> = req.body;
     if(!isICartSerialized(data)){
         throw 'request body is of wrong type, must be ICartSerialized'
     }
