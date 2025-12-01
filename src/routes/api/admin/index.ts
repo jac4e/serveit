@@ -1,6 +1,6 @@
 import express from 'express';
 import Guard from 'express-jwt-permissions';
-import { isITransactionForm, Roles } from 'typesit';
+import { HTTP, isHTTP, isITransactionForm, ITransactionForm, Roles } from 'typesit';
 import adminService from '../../../services/admin/index.js';
 import logger from '../../../core/logger/index.js';
 
@@ -40,8 +40,22 @@ function getAllTransactions(req, res, next) {
 
 function createTransactions(req, res, next) {
     // Check if body is an ITransactionForm type
-    const data = req.body;
-    if(!isITransactionForm(data)){
+    const data: HTTP<ITransactionForm> = req.body;
+
+    if (!isHTTP<ITransactionForm>(data)) {
+        throw 'request body is of wrong type, must be HTTP<ITransactionForm>'
+    }
+
+    const form: ITransactionForm = {
+        type: data.type,
+        transactionType: data.transactionType,
+        description: data.description,
+        accountId: data.accountId,
+        products: data.products,
+        total: data.total,
+    };
+
+    if(!isITransactionForm(form)){
         // logger.debug(data);
         throw 'request body is of wrong type, must be ITransactionForm'
     }

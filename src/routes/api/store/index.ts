@@ -28,12 +28,34 @@ function getProducts(req, res, next) {
 function createProduct(req, res, next) {
     // Check if body is an HTTP<IProductForm> type
     const data: HTTP<IProductForm> = req.body;
-    // logger.debug(data)
-    if(!isIProductForm(data)){
-        // logger.debug(data)
+
+    if(!isHTTP<IProductForm>(data)){
+        throw 'request body is of wrong type, must be HTTP<IProductForm>'
+    }
+
+    const form: IProductForm = {
+        name: data.name,
+        price: BigInt(data.price),
+        type: data.type,
+        category: data.category,
+        description: data.description,
+        image: data.image,
+    };
+
+    if(form.type == ProductTypes.Order) {
+        form.order = typeof data.order === 'object' && data.order ? {
+            supplier: data.order.supplier,
+            minimum: BigInt(data.order.minimum),
+        } : undefined
+    };
+
+    // Check if deserialization worked
+    if(!isIProductForm(form)){
+        logger.debug(form);
         throw 'request body is of wrong type, must be IProductForm'
     }
-    storeService.createProduct(data)
+
+    storeService.createProduct(form)
         .then(() => res.json({}))
         .catch(err => next(err))
 }
@@ -86,6 +108,10 @@ function deleteProductById(req, res, next) {
 function purchase(req, res, next) {
     // logger.debug("purchasing")
     const data: HTTP<ICartSerialized> = req.body;
+
+    // CartSerialized and its HTTP version have the same structure (arrays of objects with primitive properties),
+    // so we can use isICartSerialized to validate.
+
     if(!isICartSerialized(data)){
         throw 'request body is of wrong type, must be ICartSerialized'
     }

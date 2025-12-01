@@ -1,6 +1,6 @@
 import express from 'express';
 import Guard from 'express-jwt-permissions';
-import { isIRefill, isIRefillForm, RefillStatus, Roles } from 'typesit';
+import { HTTP, IRefillForm, isHTTP, isIRefill, isIRefillForm, RefillStatus, Roles } from 'typesit';
 import refillLedger from '../../../services/ledgers/refill/index.js';
 import logger from '../../../core/logger/index.js';
 import bodyParser from 'body-parser';
@@ -36,11 +36,22 @@ router.post('/stripe/webhook', stripeWebhook);
 
 function create(req, res, next) {
     // Check if body is an IRefillForm type
-    const data = req.body;
-    if (!isIRefillForm(data)) {
+    const data: HTTP<IRefillForm> = req.body;
+
+    if (!isHTTP<IRefillForm>(data)) {
+        throw 'request body is of wrong type, must be HTTP<IRefillForm>'
+    }
+
+    const form: IRefillForm = {
+        account: data.account,
+        amount: BigInt(data.amount),
+        method: data.method,
+    };
+
+    if (!isIRefillForm(form)) {
         throw 'request body is of wrong type, must be IRefillForm'
     }
-    refillLedger.createEntry(data).then((resp) => res.json(resp)).catch(err => next(err));
+    refillLedger.createEntry(form).then((resp) => res.json(resp)).catch(err => next(err));
 }
 
 function getAll(req, res, next) {
@@ -52,6 +63,7 @@ function getById(req, res, next) {
     refillLedger.getEntry(id).then((resp) => res.json(resp)).catch(err => next(err));
 }
 
+// This is an unused route, i am not sure if I want to keep it
 function updateById(req, res, next) {
     const id = req.params.refillId;
     const data = req.body;
