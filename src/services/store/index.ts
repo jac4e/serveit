@@ -2,17 +2,19 @@ import db from '../../core/db/index.js';
 import { JwtPayload } from 'jsonwebtoken';
 import transactionLedger from '../ledgers/transactions/index.js';
 import accountService from '../account/index.js';
-import { ICartItem, ICartItemSerialized, ICartSerialized, IProduct, IProductDocument, IProductForm, isIProduct, ITransactionForm, ITransactionItem, LedgerType, ProductTypes, Roles, TransactionType } from 'typesit';
+import { ICartItem, ICartItemSerialized, ICartSerialized, IPreOrderForm, IProduct, IProductDocument, IProductForm, isIProduct, IStockEntryForm, ITransactionForm, ITransactionItem, LedgerType, PreOrderStatus, ProductTypes, Roles, StockEntryType, TransactionType } from 'typesit';
 import email from '../../tasks/email.js';
+import { stockLedger } from '../ledgers/index.js';
+import preOrderLedger from '../ledgers/preorders/index.js';
 
 const Product = db.product;
 
 async function getAllProducts(): Promise<IProduct[]> {
-    return await Product.find({}).lean<IProduct[]>();
+    return await Product.find({}).populate('stockEntries').populate('orderEntries').lean<IProduct[]>();
 }
 
 async function getProductById(productId: IProduct['id']): Promise<IProduct> {
-    const product = await Product.findById(productId).lean<IProduct>();
+    const product = await Product.findById(productId).populate('stockEntries').populate('orderEntries').lean<IProduct>();
     if (!product) {
         throw `Product with id '${productId}' does not exist`;
     }
@@ -67,14 +69,15 @@ async function purchaseCart(payload: JwtPayload, cartSerialized: ICartSerialized
     }
 
     const productIds = cartSerialized.map((item: ICartItemSerialized): IProduct['id'] => item.id);
-    const productStock = await Product.find({ '_id': { $in: productIds }, type: ProductTypes.Stock }).lean<IProduct<ProductTypes.Stock>[]>();
-    const productOrder = await Product.find({ '_id': { $in: productIds }, type: ProductTypes.Order }).lean<IProduct<ProductTypes.Order>[]>();
+    // const productStock = await Product.find({ '_id': { $in: productIds }, type: ProductTypes.Stock }).populate('stockEntries').lean<IProduct<ProductTypes.Stock>[]>();
+    // const productOrder = await Product.find({ '_id': { $in: productIds }, type: ProductTypes.Order }).populate('orderEntries').lean<IProduct<ProductTypes.Order>[]>();
+    const product = await Product.find({ '_id': { $in: productIds } }).populate('stockEntries').populate('orderEntries').lean<IProduct[]>();
 
-    if ((productStock.length + productOrder.length) !== cartSerialized.length) {
+    if (product.length !== cartSerialized.length) {
         throw 'Some products could not be found';
     }
 
-    const cart: ICartItem[] = [...productStock, ...productOrder].map((product: IProduct): ICartItem => {
+    const cart: ICartItem[] = [...product].map((product: IProduct): ICartItem => {
         // find cart item by the product id
         const cartItem = cartSerialized.find((item: ICartItemSerialized): boolean => item.id === product.id);
         
@@ -131,20 +134,6 @@ async function purchaseCart(payload: JwtPayload, cartSerialized: ICartSerialized
     await accountService.pay(sum, payload.sub);
     await transactionLedger.createEntry(transactionParams);
 
-    // for (const item of cart) {
-    //     const productIndex = products.findIndex((product) => product.id === item.id);
-    //     const product = products[productIndex];
-
-    //     product.stock = (BigInt(product.stock) - item.amount).toString();
-    //     if (product.stock === '0') {
-    //         const subject = `Spendit - ${product.name} is Out of Stock`;
-    //         const message = `Hi Admins,\nThe last ${product.name} has just been purchased.`;
-    //         await email.sendAll(Roles.Admin, subject, message);
-    //     }
-
-    //     await Product.updateOne({ _id: product.id }, { stock: product.stock });
-    // }
-
     for (const item of cart) {
         // Update stock
         if (isIProduct(item, ProductTypes.Stock)) {
@@ -154,8 +143,14 @@ async function purchaseCart(payload: JwtPayload, cartSerialized: ICartSerialized
                 const message = `Hi Admins,\nThe last ${item.name} has just been purchased.`;
                 await email.sendAll(Roles.Admin, subject, message);
             }
-
-            await Product.updateOne({ _id: item.id }, { stock: item.stock });
+            const form: IStockEntryForm<StockEntryType.Sale> = {
+                entryType: StockEntryType.Sale,
+                productId: item.id,
+                description: `Purchase - ${item.name}`,
+                // stock decreased => negative delta
+                delta: (item.amount * -1n),
+            }
+            await stockLedger.createEntry(form);
         // Create order and check if minimum is met
         } else if (isIProduct(item, ProductTypes.Order)) {
             // TODO: Add order model so we can add an order here
@@ -164,6 +159,15 @@ async function purchaseCart(payload: JwtPayload, cartSerialized: ICartSerialized
                 const message = `Hi Admins,\n${item.name} should now be ordered.`;
                 await email.sendAll(Roles.Admin, subject, message);
             }
+            const form: IPreOrderForm = {
+                type: LedgerType.PreOrder,
+                accountId: payload.sub,
+                productId: item.id, 
+                amount: item.amount,
+                description: `Preorder - ${item.name}`,
+                status: PreOrderStatus.Unordered
+            };
+            await preOrderLedger.createEntry(form);
         }
     }
 }
