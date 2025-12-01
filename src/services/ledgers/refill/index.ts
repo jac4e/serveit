@@ -25,7 +25,7 @@ class RefillLedger extends Ledger<IRefill, IRefillForm> {
     protected type = LedgerType.Refill;
 
     constructor() {
-        super();
+        super('refill');
     }
 
     protected async create(form: IRefillForm, context?: LedgerContext): Promise<IRefill> {

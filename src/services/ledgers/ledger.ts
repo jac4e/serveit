@@ -19,13 +19,15 @@ export interface LedgerListCriteria {
 
 export default abstract class Ledger<T extends ILedger = ILedger, F extends ILedgerForm = ILedgerForm> {
     protected abstract type: LedgerType;
-    
-    constructor() {
+    protected readonly name?: string;
+
+    constructor(name: string) {
+        this.name = `${name}Ledger`;
     }
 
     log(level: string, message: string, context?: LedgerContext) {
         logger.log(level, message, {
-            section: 'ledger',
+            section: this.name ? this.name : 'ledger',
             type: this.type,
             actorId: context?.actorId,
             correlationId: context?.correlationId,

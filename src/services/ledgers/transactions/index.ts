@@ -11,7 +11,7 @@ const Transaction = db.transaction;
 class TransactionLedger extends Ledger<ITransaction, ITransactionForm> {
     protected type = LedgerType.Transaction;
     constructor() {
-        super();
+        super('transaction');
     }
 
     protected async create(form: ITransactionForm, context?: LedgerContext): Promise<ITransaction> {

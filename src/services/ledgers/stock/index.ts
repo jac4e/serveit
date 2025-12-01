@@ -10,7 +10,7 @@ class StockLedger extends Ledger<IStockEntry, IStockEntryForm> {
     protected type = LedgerType.Stock;
 
     constructor() {
-        super();
+        super('stock');
     }
 
     protected async create(form: IStockEntryForm, context?: LedgerContext): Promise<IStockEntry> {

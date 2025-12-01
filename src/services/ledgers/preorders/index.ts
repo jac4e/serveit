@@ -9,7 +9,7 @@ class PreOrderLedger extends Ledger<IPreOrder, IPreOrderForm> {
     protected type = LedgerType.PreOrder;
 
     constructor() {
-        super();
+        super('preorder');
     }
 
     protected async create(form: IPreOrderForm, context?: LedgerContext): Promise<IPreOrder> {
