@@ -1,6 +1,6 @@
 // Import your schemas here
-import {Document, type Connection } from 'mongoose'
-import { IProduct, IProductDocument, ProductCategories, ProductTypes } from 'typesit';
+import {Document, type Connection, Types } from 'mongoose'
+import { IProduct, IProductDocument, IStockEntry, IStockEntryDocument, LedgerType, ProductCategories, ProductTypes, StockEntryType } from 'typesit';
 import { backup, migrateCollection, restoreBackup } from './common.ts';
 
 export interface IProductOld {
@@ -37,6 +37,23 @@ export async function up(connection: Connection): Promise<void> {
         console.log(`Modified product ${oldDoc._id}`);
         console.log('Old document:', oldDoc);
         console.log('New document:', newDoc);
+
+        const stockEntry: Omit<IStockEntryDocument<StockEntryType.Purchase>, keyof Document> = {
+            // required id field for StockEntryBase
+            type: LedgerType.Stock,
+            entryType: StockEntryType.Purchase,
+            productId: oldDoc._id.toString(),
+            description: 'Initial stock entry from migration',
+            // purchase entries require a cost field
+            cost: "0",
+            delta: oldStock,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+        };
+
+        connection.collection('stockentries').insertOne(stockEntry);
+        console.log(`Created initial stock entry for product ${oldDoc._id} with delta ${oldStock}`);
+
         return newDoc as IProductDocument;
     }
     await migrateCollection<IProduct>(connection, 'products', productTransform);
@@ -45,4 +62,12 @@ export async function up(connection: Connection): Promise<void> {
 export async function down(connection: Connection): Promise<void> {
     // Restore products collection from backup
     await restoreBackup(connection, 'v0.3.4_products_backup', 'products');
+    // delete stock entries created during the up migration
+    try {
+        console.log('Deleting stock entries created during migration');
+        const result = await connection.collection('stockentries').deleteMany({});
+        console.log(`Deleted ${result.deletedCount} stock entries`);
+    } catch (error) {
+        console.error('Error deleting stock entries:', error);
+    }
 }
