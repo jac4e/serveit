@@ -134,20 +134,16 @@ async function purchaseCart(payload: JwtPayload, cartSerialized: ICartSerialized
     await accountService.pay(sum, payload.sub);
     const transaction = await transactionLedger.createEntry(transactionParams);
 
-    console.log('Transaction created for account:', payload.sub);
 
     for (const item of cart) {
-        console.log('Processing product:', item.name);
         // Update stock
         if (item.type === ProductTypes.Stock && item.stock) {
-            console.log('Stock before purchase:', item.stock.amount.toString());
             item.stock.amount = item.stock.amount - item.amount;
             if (item.stock.amount === 0n) {
                 const subject = `Spendit - ${item.name} is Out of Stock`;
                 const message = `Hi Admins,\nThe last ${item.name} has just been purchased.`;
                 await email.sendAll(Roles.Admin, subject, message);
             }
-            console.log('Stock after purchase:', item.stock.amount.toString());
             const form: IStockEntryForm<StockEntryType.Sale> = {
                 entryType: StockEntryType.Sale,
                 productId: item.id,
@@ -155,9 +151,7 @@ async function purchaseCart(payload: JwtPayload, cartSerialized: ICartSerialized
                 // stock decreased => negative delta
                 delta: (item.amount * -1n),
             }
-            console.log('Creating stock entry form:', form);
             await stockLedger.createEntry(form);
-            console.log('Stock entry created for product:', item.name);
         // Create order and check if minimum is met
         } else if (item.type === ProductTypes.Order && item.order) {
             // TODO: Add order model so we can add an order here
@@ -177,7 +171,6 @@ async function purchaseCart(payload: JwtPayload, cartSerialized: ICartSerialized
             await preOrderLedger.createEntry(form);
         }
     }
-    console.log('Transaction processing completed for account:', payload.sub);
 }
 
 export default { getAllProducts, deleteProductById, purchaseCart, createProduct, getProductById, updateProductById}
