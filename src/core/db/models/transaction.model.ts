@@ -43,11 +43,7 @@ export const TransactionSchema = new Schema<ITransactionDocument, Model<ITransac
     },
     products: {
         type: [transactionItemSchema],
-        required: true,
-        validate: {
-            validator: (items: unknown[]) => Array.isArray(items) && items.length > 0,
-            message: 'At least one transaction item is required'
-        }
+        required: true
     },
     total: {
         type: String,
