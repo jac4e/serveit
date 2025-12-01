@@ -26,16 +26,13 @@ export async function up(connection: Connection): Promise<void> {
 
     // Modify products collection to new schema in place (without adding new documents, by modifying existing documents)
     function productTransform(oldDoc: any): IProductDocument {
+        const { stock: oldStock, ...rest } = oldDoc as Omit<IProductDocumentOld, keyof Document>;
         const newDoc: Omit<IProductDocument, keyof Document> = {
-            ...(oldDoc as Omit<IProductDocumentOld, keyof Document>),
+            ...rest,
             category: ProductCategories.Food, // Default to Food, we can manually change the drinks and merch later
             type: ProductTypes.Stock, // Everything in the phrydge database should be stock based already
-            stock: typeof oldDoc.stock === 'string' ? oldDoc.stock : oldDoc.stock.toString(),
             price: typeof oldDoc.price === 'string' ? oldDoc.price : oldDoc.price.toString(),
         };
-
-        // Remove old fields
-        delete (newDoc as any).stock;
 
         console.log(`Modified product ${oldDoc._id}`);
         console.log('Old document:', oldDoc);
