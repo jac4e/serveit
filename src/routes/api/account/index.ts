@@ -2,7 +2,7 @@ import express, { NextFunction, request, Response } from 'express';
 import expressJwt, { Request } from 'express-jwt';
 import Guard from 'express-jwt-permissions';
 import transactionLedger from '../../../services/ledgers/transactions/index.js';
-import { IAccountBaseForm, isIAccountBaseForm, IAccountSettingsForm, isIAccountSettingsForm, ICredentials, isICredentials, Roles, isIRefillForm, IRefillForm, RefillMethods, isIAccountPasswordForm, IAccountPasswordForm, AccountFormTypes } from 'typesit';
+import { IAccountBaseForm, isIAccountBaseForm, IAccountSettingsForm, isIAccountSettingsForm, ICredentials, isICredentials, Roles, isIRefillForm, IRefillForm, RefillMethods, isIAccountPasswordForm, IAccountPasswordForm, AccountFormTypes, HTTP, isHTTP } from 'typesit';
 import accountService from '../../../services/account/index.js';
 import { randomUUID } from 'crypto'
 import refillLedger from '../../../services/ledgers/refill/index.js';
@@ -180,11 +180,24 @@ function deleteAccountById(req, res, next) {
 }
 
 function updateAccountById(req, res, next) {
-    const data = req.body;
-    if(!isIAccountBaseForm(data)){
-        throw 'request body is of wrong type, must be IAccountForm'
+    const data: HTTP<IAccountSettingsForm> = req.body;
+    console.log(data);
+    if(!isHTTP<IAccountSettingsForm>(data)){
+        throw 'request body is of wrong type, must be HTTP<IAccountSettingsForm>'
     }
-    accountService.updateAccountById(req.params['accountId'],data)
+
+    const form: IAccountSettingsForm = {
+        firstName: data.firstName,
+        lastName: data.lastName,
+        username: data.username,
+        notify: data.notify,
+        email: data.email
+    };
+    
+    if(!isIAccountSettingsForm(form)){
+        throw 'request body is of wrong type, must be IAccountSettingsForm'
+    }
+    accountService.updateAccountById(req.params['accountId'], form)
         .then(() => res.json({}))
         .catch(err => next(err))
 }
