@@ -127,7 +127,7 @@ function transformDoc(doc) {
     }
 
     // Calculate stock object from stockEntries
-    if (doc.stockEntries && Array.isArray(doc.stockEntries)) {
+    if (doc.stockEntries && Array.isArray(doc.stockEntries) && doc.type === ProductTypes.Stock) {
         const amount = doc.stockEntries.reduce((sum, entry: IStockEntryDocument) => 
             sum + BigInt(entry.delta), 0n);
         const cost = doc.stockEntries.reduce((sum, entry: IStockEntryDocument) => 

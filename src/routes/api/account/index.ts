@@ -91,7 +91,7 @@ function getSelfTransactions(req, res, next) {
 function updateSelf(req, res, next) {
     const selfId = getIdFromPayload(req);
     const type: AccountFormTypes = req.body.type;
-    const form = req.body.accountForm;
+    const form: HTTP<IAccountSettingsForm> | HTTP<IAccountPasswordForm> = req.body.accountForm;
     const currentPassword = req.body.currentPassword;
 
 
