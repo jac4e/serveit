@@ -1,6 +1,6 @@
 import express from 'express';
 import Guard from 'express-jwt-permissions';
-import { HTTP, isHTTP, isITransactionForm, ITransactionForm, Roles } from 'typesit';
+import { HTTP, isHTTP, isITransactionForm, ITransactionForm, Roles, IStockEntryForm, isIStockEntryForm } from 'typesit';
 import adminService from '../../../services/admin/index.js';
 import logger from '../../../core/logger/index.js';
 
@@ -13,6 +13,8 @@ const guard = Guard({
 router.use(guard.check(Roles.Admin))
 router.get('/transactions', getAllTransactions);
 router.post('/transactions', createTransactions);
+router.get('/stock', getAllStockEntries);
+router.post('/stock', createStockEntry);
 
 // Statistics routes needed
 // router.get('/stats', getStats);
@@ -36,6 +38,31 @@ router.get('/tasks/:taskId/:command', updateTask);
 function getAllTransactions(req, res, next) {
     // logger.debug("HELP");
     adminService.getAllTransactions().then(resp => res.json(resp)).catch(err => next(err))
+}
+
+function getAllStockEntries(req, res, next) {
+    adminService.getAllStockEntries().then(resp => res.json(resp)).catch(err => next(err))
+}
+
+function createStockEntry(req, res, next) {
+    const data: HTTP<IStockEntryForm> = req.body;
+
+    if (!isHTTP<IStockEntryForm>(data)) {
+        throw 'request body is of wrong type, must be HTTP<IStockEntryForm>'
+    }
+
+    const form: IStockEntryForm = {
+        entryType: data.entryType,
+        productId: data.productId,
+        delta: BigInt(data.delta),
+        cost: data.cost ? BigInt(data.cost) : undefined,
+    };
+
+    if (!isIStockEntryForm(form)) {
+        throw 'request body is of wrong type, must be IStockEntryForm'
+    }
+
+    adminService.createStockEntry(form).then(() => res.json({})).catch(err => next(err))
 }
 
 function createTransactions(req, res, next) {

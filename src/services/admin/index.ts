@@ -1,9 +1,19 @@
 import db from '../../core/db/index.js';
 import transactionLedger from '../ledgers/transactions/index.js';
-import { ITransaction, ITransactionForm, Roles, TransactionType, IAccountStats, IFinanceStats, IInventoryStats, IRefillStats, IStoreStats, ITaskLean, ITransactionStats, RefillStatus, StatsDateRange, ProductTypes, IProduct } from 'typesit';
+import { ITransaction, ITransactionForm, Roles, TransactionType, IAccountStats, IFinanceStats, IInventoryStats, IRefillStats, IStoreStats, ITaskLean, ITransactionStats, RefillStatus, StatsDateRange, ProductTypes, IProduct, IStockEntry, IStockEntryForm } from 'typesit';
 import { tasks } from '../../tasks/task.js';
 import { LedgerListCriteria } from '../ledgers/ledger.js';
 import { stockLedger } from '../ledgers/index.js';
+
+async function getAllStockEntries(): Promise<IStockEntry[]> {
+    return await stockLedger.listEntries({});
+}
+
+async function createStockEntry(stockEntryParam: IStockEntryForm) {
+    return stockLedger.createEntry(stockEntryParam).catch(err => {
+        throw err;
+    });
+}
 
 const Account = db.account
 const Product = db.product
@@ -56,7 +66,6 @@ async function getFinanceStats(dateOption: StatsDateRange): Promise<IFinanceStat
 
     const creditBalance = totalCredit - revenue;
 
-
     const costOfGoodsSold = 0n;
     
     const profit = revenue - costOfGoodsSold;
@@ -72,22 +81,30 @@ async function getFinanceStats(dateOption: StatsDateRange): Promise<IFinanceStat
 async function getInventoryStats(): Promise<IInventoryStats> {
     // Generate inventory stats
     // Total products
-    const total = await Product.countDocuments({ type: ProductTypes.Stock });
+    // const total = await Product.countDocuments({ type: ProductTypes.Stock });
+
+    const products = await Product.find<IProduct<ProductTypes.Stock>>({ type: ProductTypes.Stock }).populate('stockEntries').lean<IProduct<ProductTypes.Stock>[]>();
+    const total = products.length;
     
-    const inventory = await stockLedger.getInventory();
-    console.log(inventory);
+    // const inventory = await stockLedger.getInventory();
+    // console.log(inventory);
     // In-stock products
-    const inStock = Array.from(inventory.entries()).filter(([_, product]) => product.stock > 0n).length;
+    const inStock = products.filter(product => {
+        return product.stock.amount > 0n;
+    }).length;
+
     // Out-of-stock products
-    const outOfStock = Array.from(inventory.entries()).filter(([_, product]) => product.stock <= 0n).length;
+    const outOfStock = total - inStock;
 
     // Book value
-    const bookValue = Number(Array.from(inventory.entries()).reduce((acc, [_, product]) => acc + product.cost, 0n)) / 100;
+    const bookValue = Number(products.reduce((acc, product) => {
+        return acc + (BigInt(product.stock.cost) * BigInt(product.stock.amount));
+    }, 0n))/100;
 
     // Retail value
-    const retailValue = Number(await Product.find<IProduct<ProductTypes.Stock>>({ type: ProductTypes.Stock }).then(products => {
-        return products.reduce((acc, product) => acc + BigInt(product.price) * BigInt(inventory.get(product.id)?.stock || 0n), 0n);
-    })) / 100;
+    const retailValue = Number(products.reduce((acc, product) => {
+        return acc + (BigInt(product.price) * BigInt(product.stock.amount || 0n));
+    }, 0n)) / 100;
     return { total: total, inStock: inStock, outOfStock: outOfStock, bookValue: bookValue, retailValue: retailValue };
 }
 
@@ -114,7 +131,7 @@ async function getAccountStats(): Promise<IAccountStats> {
     const members = await Account.countDocuments({ role: Roles.Member });
     // Admin accounts
     const admins = await Account.countDocuments({ role: Roles.Admin });
-    return { total: total, unverified: unverified, nonMember: nonMembers, member: members, admin: admins };
+    return { total: total, unverified: unverified, nonMember: nonMembers, member: members, admin: admins, pos: 0}
 }
 
 async function getRefillStats(): Promise<IRefillStats> {
@@ -225,6 +242,8 @@ async function manageTask(taskId: string, command: string, data: any) {
 export default {
     createTransaction,
     getAllTransactions,
+    getAllStockEntries,
+    createStockEntry,
     getFinanceStats,
     getInventoryStats,
     getTransactionStats,
