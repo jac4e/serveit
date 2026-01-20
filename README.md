@@ -14,6 +14,49 @@ In this project, run `npm install`
     - `config` - configuration files
     - `certs` - ssl certificates
 
+## Quick Start (Development)
+
+1. **Start MongoDB** using the provided docker-compose:
+   ```sh
+   docker compose -f docker-compose.database.yml up -d
+   ```
+
+2. **Install dependencies**:
+   ```sh
+   npm install
+   ```
+
+3. **Start the development server**:
+   ```sh
+   npm run watch
+   ```
+
+4. **Check console output** for the auto-generated dev account password:
+   ```
+   Dev account password: <random-password>
+   ```
+
+5. **(Optional) Generate sample data**:
+   ```sh
+   npm run generate
+   ```
+   This creates sample accounts, products, transactions, and refills for testing.
+
+### Default Test Credentials
+
+When using `npm run generate`, the following test accounts are created:
+
+| Username | Password | Role |
+|----------|----------|------|
+| admin | admin123! | Admin |
+| member1 | member123! | Member |
+| member2 | member123! | Member |
+| newuser | newuser123! | Unverified |
+| nonmember | nonmember123! | NonMember |
+| pos | pos12345! | POS |
+
+The `dev` account is created automatically on first run with a random password shown in the console.
+
 ## Setup
 
 ### MongoDB
@@ -24,12 +67,12 @@ You can also use your own mongodb instance, but you will need to set the `DB_URL
 
 ### Environment Variables
 
-Before the server can be used in production, the following enivronment variables must be set:
+Before the server can be used in production, the following environment variables must be set:
 - NODE_ENV (production/development)
 - DB_URL (mongodb url)
 - DB_PORT (mongodb port, only needed for localhost url)
 - DB_USER (mongodb username)
-- DB_PASS,
+- DB_PASS (mongodb password)
 - INCLUDE_APP (true/false) [whether the backend server should serve the frontend app]
 - INCLUDE_GOOGLE (true/false) [whether the backend server should use google services (gmail, google oauth, etc.)]
 - BACKEND_PORT (port to run backend server on)
@@ -39,19 +82,26 @@ Before the server can be used in production, the following enivronment variables
 - STRIPE_SECRET (stripe secret key)
 - STRIPE_WEBHOOK_SECRET (stripe webhook secret key)
 
-For example, a typical enviroment variables for production would look like:
+**Note:** In development mode (`NODE_ENV=development` or unset), most variables have sensible defaults and are not required. The server will:
+- Connect to MongoDB at `localhost:27017`
+- Use database name `spendit-dev-db`
+- Run on port `3443`
+- Generate a random JWT secret
+- Auto-create a `dev` admin account
+
+For example, typical environment variables for production would look like:
 
 ```
 NODE_ENV=production
 DB_URL=127.0.0.1 #For DB hosted on same machine as server with default port and no username/password
 INCLUDE_APP=true #Only needed if serving frontend app from backend server
 INCLUDE_GOOGLE=true #Only needed if using/testing google services
-BACKEND_PORT=3030 #Port to run backend server on
+BACKEND_PORT=3443 #Port to run backend server on
 BACKEND_DOMAIN=phrydge.engphys.com #Domain to run backend server on
 SELFSIGN=true #Make backend manage ssl certificate
 CF_TOKEN=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX #Cloudflare api token for valid ssl certificate generation
 STRIPE_SECRET=sk_test_XXXXXXXX
-STRIPE_WEB=whsec_XXXXXXXX
+STRIPE_WEBHOOK_SECRET=whsec_XXXXXXXX
 ```
 
 ### First Run
