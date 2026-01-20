@@ -4,6 +4,7 @@ import { HTTP, IRefillForm, isHTTP, isIRefill, isIRefillForm, RefillStatus, Role
 import refillLedger from '../../../services/ledgers/refill/index.js';
 import logger from '../../../core/logger/index.js';
 import bodyParser from 'body-parser';
+import { registerRoute, CommonResponses, CommonParameters } from '../../../utils/openapi-docs.js';
 
 const router = express.Router();
 const guard = Guard({
@@ -11,27 +12,149 @@ const guard = Guard({
     permissionsProperty: 'permissions'
 })
 
-// Refill routes needed
+// Base path for this router
+const BASE_PATH = '/api/refills';
 
-// create refill (Admin)
+// ============================================================================
+// Admin Routes
+// ============================================================================
+
+registerRoute('POST', BASE_PATH, '/create', {
+    summary: 'Create a refill (Admin)',
+    description: 'Create a new refill entry for any account. Admin only.',
+    tags: ['Refills', 'Admin'],
+    requestBody: {
+        description: 'Refill details',
+        schema: 'RefillForm'
+    },
+    responses: {
+        200: { description: 'Refill created successfully', schema: 'Refill' },
+        400: { description: 'Invalid refill data' },
+        403: CommonResponses.Forbidden
+    }
+});
 router.post('/create', guard.check(Roles.Admin), create);
 
-// get all refills (Admin)
+registerRoute('GET', BASE_PATH, '/', {
+    summary: 'Get all refills (Admin)',
+    description: 'Retrieve a list of all refill entries. Admin only.',
+    tags: ['Refills', 'Admin'],
+    responses: {
+        200: { description: 'List of all refills', schema: 'Refill[]' },
+        403: CommonResponses.Forbidden
+    }
+});
 router.get('/', guard.check(Roles.Admin), getAll);
-// get refill by user id (Admin)
+
+registerRoute('GET', BASE_PATH, '/:accountId/history', {
+    summary: 'Get user refill history (Admin)',
+    description: 'Retrieve the refill history for a specific user. Admin only.',
+    tags: ['Refills', 'Admin'],
+    parameters: [CommonParameters.accountId()],
+    responses: {
+        200: { description: 'List of refills for the user', schema: 'Refill[]' },
+        403: CommonResponses.Forbidden,
+        404: CommonResponses.NotFound
+    }
+});
 router.get('/:accountId/history', guard.check(Roles.Admin), getRefillHistory);
-// get refill by id (Admin)
+
+registerRoute('GET', BASE_PATH, '/:refillId', {
+    summary: 'Get refill by ID (Admin)',
+    description: 'Retrieve details of a specific refill. Admin only.',
+    tags: ['Refills', 'Admin'],
+    parameters: [CommonParameters.refillId()],
+    responses: {
+        200: { description: 'Refill details', schema: 'Refill' },
+        403: CommonResponses.Forbidden,
+        404: CommonResponses.NotFound
+    }
+});
 router.get('/:refillId', guard.check(Roles.Admin), getById);
-// update refill by id (Admin)
+
+registerRoute('PUT', BASE_PATH, '/:refillId', {
+    summary: 'Update refill (Admin)',
+    description: 'Update a refill entry. Admin only.',
+    tags: ['Refills', 'Admin'],
+    deprecated: true,
+    parameters: [CommonParameters.refillId()],
+    requestBody: {
+        description: 'Updated refill data',
+        schema: 'Refill'
+    },
+    responses: {
+        200: { description: 'Refill updated successfully' },
+        400: { description: 'Invalid refill data' },
+        403: CommonResponses.Forbidden,
+        404: CommonResponses.NotFound
+    }
+});
 router.put('/:refillId', guard.check(Roles.Admin), updateById);
-// approve refill (Admin)
+
+registerRoute('PUT', BASE_PATH, '/:refillId/approve', {
+    summary: 'Approve refill (Admin)',
+    description: 'Approve a pending refill and credit the account. Admin only.',
+    tags: ['Refills', 'Admin'],
+    parameters: [CommonParameters.refillId()],
+    responses: {
+        200: { description: 'Refill approved and account credited' },
+        400: { description: 'Refill cannot be approved (invalid status)' },
+        403: CommonResponses.Forbidden,
+        404: CommonResponses.NotFound
+    }
+});
 router.put('/:refillId/approve', guard.check(Roles.Admin), approveRefill);
-// cancel refill (Admin)
+
+registerRoute('PUT', BASE_PATH, '/:refillId/cancel', {
+    summary: 'Cancel refill (Admin)',
+    description: 'Cancel a pending refill. Admin only.',
+    tags: ['Refills', 'Admin'],
+    parameters: [CommonParameters.refillId()],
+    responses: {
+        200: { description: 'Refill cancelled' },
+        400: { description: 'Refill cannot be cancelled (invalid status)' },
+        403: CommonResponses.Forbidden,
+        404: CommonResponses.NotFound
+    }
+});
 router.put('/:refillId/cancel', guard.check(Roles.Admin), cancelRefill);
-// fail refill (Admin)
+
+registerRoute('PUT', BASE_PATH, '/:refillId/fail', {
+    summary: 'Fail refill (Admin)',
+    description: 'Mark a refill as failed. Admin only.',
+    tags: ['Refills', 'Admin'],
+    parameters: [CommonParameters.refillId()],
+    responses: {
+        200: { description: 'Refill marked as failed' },
+        400: { description: 'Refill cannot be failed (invalid status)' },
+        403: CommonResponses.Forbidden,
+        404: CommonResponses.NotFound
+    }
+});
 router.put('/:refillId/fail', guard.check(Roles.Admin), failRefill);
 
-// webhook route for stripe
+// ============================================================================
+// Webhook Routes
+// ============================================================================
+
+registerRoute('POST', BASE_PATH, '/stripe/webhook', {
+    summary: 'Stripe webhook endpoint',
+    description: 'Receives webhook events from Stripe for payment processing. This endpoint should not be called directly.',
+    tags: ['Refills', 'Webhooks'],
+    security: false,
+    requestBody: {
+        description: 'Stripe webhook event payload',
+        content: {
+            'application/json': {
+                schema: { type: 'object' }
+            }
+        }
+    },
+    responses: {
+        200: { description: 'Webhook received' },
+        400: { description: 'Invalid webhook signature' }
+    }
+});
 router.post('/stripe/webhook', stripeWebhook);
 
 function create(req, res, next) {

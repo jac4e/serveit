@@ -1,0 +1,81 @@
+openapi: 3.0.3
+info:
+  title: Serveit API
+  version: 0.3.4-beta
+  description: |
+    REST API for Serveit - a point of sale and account management system.
+    
+    This specification is automatically generated from Express route definitions
+    using inline OpenAPI documentation. Schemas are imported from the typesit
+    shared type library.
+    
+    ## Authentication
+    Most endpoints require JWT authentication. Include the token in the Authorization header:
+    ```
+    Authorization: Bearer <your-jwt-token>
+    ```
+    
+    ## Roles
+    - **unverified**: New accounts pending verification
+    - **member**: Verified club members with full access
+    - **nonMember**: Verified non-members with limited access
+    - **admin**: Administrative access to all endpoints
+    - **pos**: Point of sale terminal access
+
+servers:
+  - url: https://localhost:8443/api
+    description: Local HTTPS API
+  - url: http://localhost:8080/api
+    description: Local HTTP API (dev only)
+  - url: https://localhost:8443
+    description: Local HTTPS (non-API routes including /docs)
+  - url: http://localhost:8080
+    description: Local HTTP (non-API routes including /docs)
+
+tags:
+  - name: Documentation
+    description: API documentation and OpenAPI specification download
+  - name: System
+    description: System status and health endpoints
+  - name: Authentication
+    description: Login, registration, and session management
+  - name: Accounts
+    description: User account management
+  - name: Store
+    description: Product catalog and purchasing
+  - name: Products
+    description: Product management (CRUD)
+  - name: Transactions
+    description: Financial transaction records
+  - name: Refills
+    description: Account balance top-up operations
+  - name: Admin
+    description: Administrative operations (requires admin role)
+  - name: Statistics
+    description: Business analytics and reporting
+  - name: Tasks
+    description: Background task management
+  - name: Stock
+    description: Inventory and stock management
+  - name: Webhooks
+    description: External webhook endpoints
+
+security:
+  - bearerAuth: []
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token obtained from /accounts/auth endpoint
+
+  # Note: Schema definitions are automatically merged from typesit library
+  # See src/utils/typesit-schema.ts for the merge logic
+  schemas: {}
+
+# Note: Path definitions are automatically merged from Express route documentation
+# See src/utils/openapi-docs.ts for the documentation system
+# Route files use registerRoute() to document their endpoints
+paths: {}

@@ -3,6 +3,7 @@ import Guard from 'express-jwt-permissions';
 import { HTTP, isHTTP, isITransactionForm, ITransactionForm, Roles, IStockEntryForm, isIStockEntryForm } from 'typesit';
 import adminService from '../../../services/admin/index.js';
 import logger from '../../../core/logger/index.js';
+import { registerRoute, CommonResponses, CommonParameters } from '../../../utils/openapi-docs.js';
 
 const router = express.Router();
 const guard = Guard({
@@ -10,29 +11,180 @@ const guard = Guard({
     permissionsProperty: 'permissions'
   })
 
+// Base path for this router
+const BASE_PATH = '/api/admin';
+
 router.use(guard.check(Roles.Admin))
+
+// ============================================================================
+// Transaction Routes
+// ============================================================================
+
+registerRoute('GET', BASE_PATH, '/transactions', {
+    summary: 'Get all transactions',
+    description: 'Retrieve a list of all transactions in the system. Admin only.',
+    tags: ['Admin', 'Transactions'],
+    responses: {
+        200: { description: 'List of all transactions', schema: 'Transaction[]' },
+        403: CommonResponses.Forbidden
+    }
+});
 router.get('/transactions', getAllTransactions);
+
+registerRoute('POST', BASE_PATH, '/transactions', {
+    summary: 'Create a transaction',
+    description: 'Manually create a new transaction. Admin only.',
+    tags: ['Admin', 'Transactions'],
+    requestBody: {
+        description: 'Transaction details',
+        schema: 'TransactionForm'
+    },
+    responses: {
+        200: { description: 'Transaction created successfully' },
+        400: { description: 'Invalid transaction data' },
+        403: CommonResponses.Forbidden
+    }
+});
 router.post('/transactions', createTransactions);
+
+// ============================================================================
+// Stock Entry Routes
+// ============================================================================
+
+registerRoute('GET', BASE_PATH, '/stock', {
+    summary: 'Get all stock entries',
+    description: 'Retrieve a list of all stock entries (purchases, shrinkage, overage, sales). Admin only.',
+    tags: ['Admin', 'Stock'],
+    responses: {
+        200: { description: 'List of all stock entries', schema: 'StockEntry[]' },
+        403: CommonResponses.Forbidden
+    }
+});
 router.get('/stock', getAllStockEntries);
+
+registerRoute('POST', BASE_PATH, '/stock', {
+    summary: 'Create a stock entry',
+    description: 'Record a new stock entry (purchase, shrinkage, overage). Admin only.',
+    tags: ['Admin', 'Stock'],
+    requestBody: {
+        description: 'Stock entry details',
+        schema: 'StockEntryForm'
+    },
+    responses: {
+        200: { description: 'Stock entry created successfully' },
+        400: { description: 'Invalid stock entry data' },
+        403: CommonResponses.Forbidden
+    }
+});
 router.post('/stock', createStockEntry);
 
-// Statistics routes needed
-// router.get('/stats', getStats);
-// Finance stats
+// ============================================================================
+// Statistics Routes
+// ============================================================================
+
+registerRoute('GET', BASE_PATH, '/stats/finance/:dateOption', {
+    summary: 'Get finance statistics',
+    description: 'Retrieve financial statistics including revenue, profit, and credit balance. Admin only.',
+    tags: ['Admin', 'Statistics'],
+    parameters: [CommonParameters.dateOption('Time period for statistics')],
+    responses: {
+        200: { description: 'Finance statistics', schema: 'FinanceStats' },
+        403: CommonResponses.Forbidden
+    }
+});
 router.get('/stats/finance/:dateOption', getFinanceStats);
-// Inventory stats
+
+registerRoute('GET', BASE_PATH, '/stats/inventory', {
+    summary: 'Get inventory statistics',
+    description: 'Retrieve inventory statistics including stock counts and valuations. Admin only.',
+    tags: ['Admin', 'Statistics'],
+    responses: {
+        200: { description: 'Inventory statistics', schema: 'InventoryStats' },
+        403: CommonResponses.Forbidden
+    }
+});
 router.get('/stats/inventory', getInventoryStats);
-// Transaction stats
+
+registerRoute('GET', BASE_PATH, '/stats/transactions', {
+    summary: 'Get transaction statistics',
+    description: 'Retrieve transaction statistics by type. Admin only.',
+    tags: ['Admin', 'Statistics'],
+    responses: {
+        200: { description: 'Transaction statistics', schema: 'TransactionStats' },
+        403: CommonResponses.Forbidden
+    }
+});
 router.get('/stats/transactions', getTransactionStats);
-// Account stats
+
+registerRoute('GET', BASE_PATH, '/stats/accounts', {
+    summary: 'Get account statistics',
+    description: 'Retrieve account statistics by role. Admin only.',
+    tags: ['Admin', 'Statistics'],
+    responses: {
+        200: { description: 'Account statistics', schema: 'AccountStats' },
+        403: CommonResponses.Forbidden
+    }
+});
 router.get('/stats/accounts', getAccountStats);
-// Refill stats
+
+registerRoute('GET', BASE_PATH, '/stats/refills', {
+    summary: 'Get refill statistics',
+    description: 'Retrieve refill statistics by status. Admin only.',
+    tags: ['Admin', 'Statistics'],
+    responses: {
+        200: { description: 'Refill statistics', schema: 'RefillStats' },
+        403: CommonResponses.Forbidden
+    }
+});
 router.get('/stats/refills', getRefillStats);
-// Store stats
+
+registerRoute('GET', BASE_PATH, '/stats/store', {
+    summary: 'Get store statistics',
+    description: 'Retrieve store performance statistics including top products and buyers. Admin only.',
+    tags: ['Admin', 'Statistics'],
+    responses: {
+        200: { description: 'Store statistics', schema: 'StoreStats' },
+        403: CommonResponses.Forbidden
+    }
+});
 router.get('/stats/store', getStoreStats);
 
-// Task routes needed
+// ============================================================================
+// Task Routes
+// ============================================================================
+
+registerRoute('GET', BASE_PATH, '/tasks', {
+    summary: 'Get all background tasks',
+    description: 'Retrieve a list of all background tasks and their status. Admin only.',
+    tags: ['Admin', 'Tasks'],
+    responses: {
+        200: { description: 'List of tasks', schema: 'TaskLean[]' },
+        403: CommonResponses.Forbidden
+    }
+});
 router.get('/tasks', getTasks);
+
+registerRoute('GET', BASE_PATH, '/tasks/:taskId/:command', {
+    summary: 'Manage a background task',
+    description: 'Execute a command on a background task (start, stop, run). Admin only.',
+    tags: ['Admin', 'Tasks'],
+    parameters: [
+        CommonParameters.taskId(),
+        {
+            name: 'command',
+            in: 'path',
+            description: 'Command to execute on the task',
+            required: true,
+            schema: { type: 'string', enum: ['start', 'stop', 'run'] }
+        }
+    ],
+    responses: {
+        200: { description: 'Task command executed successfully' },
+        400: { description: 'Invalid command' },
+        403: CommonResponses.Forbidden,
+        404: { description: 'Task not found' }
+    }
+});
 router.get('/tasks/:taskId/:command', updateTask);
 
 function getAllTransactions(req, res, next) {

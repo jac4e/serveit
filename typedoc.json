@@ -1,0 +1,35 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "entryPoints": [
+    "src/routes/api/index.ts",
+    "src/routes/api/account/index.ts",
+    "src/routes/api/admin/index.ts",
+    "src/routes/api/refill/index.ts",
+    "src/routes/api/store/index.ts"
+  ],
+  "entryPointStrategy": "resolve",
+  "tsconfig": "src/tsconfig.json",
+  "out": "docs/api",
+  "exclude": [
+    "**/node_modules/**",
+    "**/*.test.ts",
+    "**/*.spec.ts"
+  ],
+  "excludePrivate": true,
+  "excludeProtected": false,
+  "excludeExternals": true,
+  "includeVersion": true,
+  "searchInComments": true,
+  "sort": ["source-order"],
+  "validation": {
+    "notExported": true,
+    "invalidLink": true,
+    "notDocumented": false
+  },
+  "plugin": [],
+  "readme": "none",
+  "name": "Serveit API Documentation",
+  "navigationLinks": {
+    "GitHub": "https://github.com/jac4e/serveit"
+  }
+}

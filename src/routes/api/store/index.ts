@@ -3,6 +3,7 @@ import Guard from 'express-jwt-permissions';
 import { isICartSerialized, isIProduct, isIProductForm, Roles, HTTP, IProductForm, ICartSerialized, isHTTP, ProductTypes } from 'typesit';
 import storeService from '../../../services/store/index.js';
 import logger from '../../../core/logger/index.js';
+import { registerRoute, CommonResponses, CommonParameters } from '../../../utils/openapi-docs.js';
 
 const router = express.Router();
 const guard = Guard({
@@ -10,14 +11,102 @@ const guard = Guard({
     permissionsProperty: 'permissions'
   });
 
-// Routes
-router.get('/products', getProducts)
-router.post('/purchase', guard.check([[Roles.Member], [Roles.NonMember]]), purchase)
+// Base path for this router
+const BASE_PATH = '/api/store';
 
-router.post('/products', createProduct)
-router.put('/products/:productId', guard.check(Roles.Admin), updateProductById)
-router.get('/products/:productId', getProductById)
-router.delete('/products/:productId', guard.check(Roles.Admin), deleteProductById)
+// ============================================================================
+// Public/Member Routes
+// ============================================================================
+
+registerRoute('GET', BASE_PATH, '/products', {
+    summary: 'Get all products',
+    description: 'Retrieve a list of all available products in the store.',
+    tags: ['Store', 'Products'],
+    responses: {
+        200: { description: 'List of all products', schema: 'Product[]' }
+    }
+});
+router.get('/products', getProducts);
+
+registerRoute('POST', BASE_PATH, '/purchase', {
+    summary: 'Purchase products',
+    description: 'Complete a purchase with the items in the cart. Requires member or non-member role.',
+    tags: ['Store', 'Transactions'],
+    requestBody: {
+        description: 'Serialized cart with product IDs and amounts',
+        schema: 'CartSerialized'
+    },
+    responses: {
+        200: { description: 'Purchase completed successfully' },
+        400: { description: 'Invalid cart data or insufficient balance' },
+        401: CommonResponses.Unauthorized,
+        403: { description: 'Account not verified for purchases' }
+    }
+});
+router.post('/purchase', guard.check([[Roles.Member], [Roles.NonMember]]), purchase);
+
+registerRoute('GET', BASE_PATH, '/products/:productId', {
+    summary: 'Get product by ID',
+    description: 'Retrieve details of a specific product.',
+    tags: ['Store', 'Products'],
+    parameters: [CommonParameters.productId()],
+    responses: {
+        200: { description: 'Product details', schema: 'Product' },
+        404: CommonResponses.NotFound
+    }
+});
+router.get('/products/:productId', getProductById);
+
+// ============================================================================
+// Admin Routes
+// ============================================================================
+
+registerRoute('POST', BASE_PATH, '/products', {
+    summary: 'Create a new product',
+    description: 'Add a new product to the store. Admin only.',
+    tags: ['Store', 'Products', 'Admin'],
+    requestBody: {
+        description: 'Product details',
+        schema: 'ProductForm'
+    },
+    responses: {
+        200: { description: 'Product created successfully' },
+        400: { description: 'Invalid product data' },
+        403: CommonResponses.Forbidden
+    }
+});
+router.post('/products', createProduct);
+
+registerRoute('PUT', BASE_PATH, '/products/:productId', {
+    summary: 'Update a product',
+    description: 'Update an existing product. Admin only.',
+    tags: ['Store', 'Products', 'Admin'],
+    parameters: [CommonParameters.productId()],
+    requestBody: {
+        description: 'Updated product details',
+        schema: 'ProductForm'
+    },
+    responses: {
+        200: { description: 'Product updated successfully' },
+        400: { description: 'Invalid product data' },
+        403: CommonResponses.Forbidden,
+        404: CommonResponses.NotFound
+    }
+});
+router.put('/products/:productId', guard.check(Roles.Admin), updateProductById);
+
+registerRoute('DELETE', BASE_PATH, '/products/:productId', {
+    summary: 'Delete a product',
+    description: 'Remove a product from the store. Admin only.',
+    tags: ['Store', 'Products', 'Admin'],
+    parameters: [CommonParameters.productId()],
+    responses: {
+        200: { description: 'Product deleted successfully' },
+        403: CommonResponses.Forbidden,
+        404: CommonResponses.NotFound
+    }
+});
+router.delete('/products/:productId', guard.check(Roles.Admin), deleteProductById);
 
 function getProducts(req, res, next) {
     storeService.getAllProducts()

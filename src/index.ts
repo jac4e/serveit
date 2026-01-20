@@ -7,6 +7,7 @@ import { __envConfig } from './config/config.js';
 import errorHandler from './middleware/error-handler.js';
 import api from './routes/api/index.js';
 import setup, { shouldSetup } from './routes/setup/index.js';
+import openapiRoutes, { setupOpenAPIRoutes } from './routes/openapi/index.js';
 import { randomUUID } from 'crypto'
 import cors from 'cors';
 import jwtAuthGuard from './middleware/jwt-auth.js';
@@ -134,6 +135,9 @@ app.use('/setup', setup);
 
 // api route
 app.use('/api', jwtAuthGuard(), cors(), readyGuard, api);
+
+// API documentation routes (must be after all routes are registered)
+app.use('/docs', setupOpenAPIRoutes());
 
 // app route
 app.get('/', readyGuard, appGuard, (req, res) => {
