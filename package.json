@@ -12,6 +12,7 @@
     "prepare": "copyfiles -u 1 src/**/*.html dist/",
     "start": "node dist/index.js --enable-source-maps",
     "watch": "npx env-cmd npx tsc-watch --build src --onCompilationComplete 'npm run prepare' --onSuccess 'npm run start'",
+    "generate": "npx env-cmd node dist/scripts/generate.js --enable-source-maps",
     "docs": "typedoc",
     "docs:api": "typedoc"
   },
