@@ -9,6 +9,7 @@ import zxcvbnCommonPackage from '@zxcvbn-ts/language-common';
 import zxcvbnEnPackage from '@zxcvbn-ts/language-en';
 import { ITransaction, IAccountDocument, IAccountBaseForm, IAccountSettingsForm, IAccount, ICredentials, Roles } from 'typesit';
 import email from '../../tasks/email.js';
+import apiKeyService from '../api-keys/index.js';
 
 
 const zxcvbnBaseSettings = {
@@ -38,6 +39,19 @@ async function auth(credentials: ICredentials): Promise<{ account: IAccount, tok
     throw `Auth error username or password is incorrect`
   }
 
+  return buildAuthResponse(account);
+}
+
+async function authApiKey(apiKey: string): Promise<{ account: IAccount, token: string }> {
+  const key = await apiKeyService.authenticate(apiKey);
+  const account = await Account.findById<IAccountDocument>(key.userId);
+  if (account === null) {
+    throw 'Account not found'
+  }
+  return buildAuthResponse(account);
+}
+
+async function buildAuthResponse(account: IAccountDocument): Promise<{ account: IAccount, token: string }> {
   // Do not login nonverified users
   if (account.role === Roles['Unverified']) {
     throw `Auth error account not verified`
@@ -304,6 +318,7 @@ async function deleteAccountById(id: IAccount['id']): Promise<void> {
 
 export default {
   auth,
+  authApiKey,
   matchPassword,
   create,
   getAll,

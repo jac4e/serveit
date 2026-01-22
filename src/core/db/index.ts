@@ -29,10 +29,11 @@ db.once('open', function callback () {
 });
 
 import account from './models/account.model.js';
+import apiKey from './models/api-key.model.js';
 import product from './models/product.model.js';
 import transaction from './models/transaction.model.js';
 import refill from './models/refill.model.js';
 import stock from './models/stock.model.js';
 import preorders from './models/preorders.model.js';
 
-export default { account, product, transaction, refill, stock, preorders };
+export default { account, apiKey, product, transaction, refill, stock, preorders };

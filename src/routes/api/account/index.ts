@@ -2,11 +2,12 @@ import express, { NextFunction, request, Response } from 'express';
 import expressJwt, { Request } from 'express-jwt';
 import Guard from 'express-jwt-permissions';
 import transactionLedger from '../../../services/ledgers/transactions/index.js';
-import { IAccountBaseForm, isIAccountBaseForm, IAccountSettingsForm, isIAccountSettingsForm, ICredentials, isICredentials, Roles, isIRefillForm, IRefillForm, RefillMethods, isIAccountPasswordForm, IAccountPasswordForm, AccountFormTypes, HTTP, isHTTP } from 'typesit';
+import { IAccountBaseForm, isIAccountBaseForm, IAccountSettingsForm, isIAccountSettingsForm, ICredentials, isICredentials, Roles, isIRefillForm, IRefillForm, RefillMethods, isIAccountPasswordForm, IAccountPasswordForm, AccountFormTypes, HTTP, isHTTP, IApiKeyCreateForm, isIApiKeyCreateForm, IApiKeyAuthForm, isIApiKeyAuthForm } from 'typesit';
 import accountService from '../../../services/account/index.js';
 import { randomUUID } from 'crypto'
 import refillLedger from '../../../services/ledgers/refill/index.js';
 import { registerRoute, CommonResponses, CommonParameters } from '../../../utils/openapi-docs.js';
+import apiKeyService from '../../../services/api-keys/index.js';
 
 const router = express.Router();
 const guard = Guard({
@@ -37,6 +38,23 @@ registerRoute('POST', BASE_PATH, '/auth', {
     }
 });
 router.post('/auth', auth);
+
+registerRoute('POST', BASE_PATH, '/auth/apikey', {
+    summary: 'Authenticate account with API key',
+    description: 'Authenticate a user with an API key. Returns a JWT token on success.',
+    tags: ['Accounts', 'Authentication'],
+    security: false,
+    requestBody: {
+        description: 'API key authentication payload',
+        schema: 'ApiKeyAuthForm'
+    },
+    responses: {
+        200: { description: 'Authentication successful, returns JWT token and account info', schema: 'object' },
+        400: { description: 'Invalid API key payload' },
+        401: { description: 'Authentication failed - invalid API key' }
+    }
+});
+router.post('/auth/apikey', authApiKey);
 
 registerRoute('POST', BASE_PATH, '/register', {
     summary: 'Register a new account',
@@ -195,6 +213,63 @@ registerRoute('GET', BASE_PATH, '/self/transactions', {
 });
 router.get('/self/transactions', getSelfTransactions);
 
+registerRoute('GET', BASE_PATH, '/self/apikeys', {
+    summary: 'List current account API keys',
+    description: 'Retrieve the authenticated user\'s API keys (metadata only).',
+    tags: ['Accounts', 'Authentication'],
+    responses: {
+        200: { description: 'List of API keys', schema: 'ApiKey[]' },
+        401: CommonResponses.Unauthorized
+    }
+});
+router.get('/self/apikeys', listSelfApiKeys);
+
+registerRoute('POST', BASE_PATH, '/self/apikeys', {
+    summary: 'Create API key for current account',
+    description: 'Create a new API key for the authenticated user. Returns the key once.',
+    tags: ['Accounts', 'Authentication'],
+    requestBody: {
+        description: 'API key creation payload',
+        schema: 'ApiKeyCreateForm'
+    },
+    responses: {
+        200: { description: 'API key created successfully', schema: 'object' },
+        400: { description: 'Invalid API key payload' },
+        409: { description: 'API key name already exists' }
+    }
+});
+router.post('/self/apikeys', createSelfApiKey);
+
+registerRoute('DELETE', BASE_PATH, '/self/apikeys/:name', {
+    summary: 'Delete API key for current account',
+    description: 'Delete a specific API key by name for the authenticated user.',
+    tags: ['Accounts', 'Authentication'],
+    parameters: [{
+        name: 'name',
+        in: 'path',
+        description: 'API key name',
+        required: true,
+        schema: { type: 'string' }
+    }],
+    responses: {
+        200: { description: 'API key deleted successfully' },
+        401: CommonResponses.Unauthorized,
+        404: CommonResponses.NotFound
+    }
+});
+router.delete('/self/apikeys/:name', deleteSelfApiKey);
+
+registerRoute('DELETE', BASE_PATH, '/self/apikeys', {
+    summary: 'Clear all API keys for current account',
+    description: 'Delete all API keys for the authenticated user.',
+    tags: ['Accounts', 'Authentication'],
+    responses: {
+        200: { description: 'API keys deleted successfully' },
+        401: CommonResponses.Unauthorized
+    }
+});
+router.delete('/self/apikeys', clearSelfApiKeys);
+
 // ============================================================================
 // Admin Routes
 // ============================================================================
@@ -344,6 +419,46 @@ registerRoute('PUT', BASE_PATH, '/:accountId/resetPassword', {
 });
 router.put('/:accountId/resetPassword', guard.check(Roles.Admin), resetPasswordById);
 
+registerRoute('POST', BASE_PATH, '/:accountId/apikeys', {
+    summary: 'Create API key for user (Admin)',
+    description: 'Create an API key for a specific user. Admin only.',
+    tags: ['Accounts', 'Admin'],
+    parameters: [CommonParameters.accountId()],
+    requestBody: {
+        description: 'API key creation payload',
+        schema: 'ApiKeyCreateForm'
+    },
+    responses: {
+        200: { description: 'API key created successfully', schema: 'object' },
+        400: { description: 'Invalid API key payload' },
+        403: CommonResponses.Forbidden,
+        409: { description: 'API key name already exists' }
+    }
+});
+router.post('/:accountId/apikeys', guard.check(Roles.Admin), createApiKeyForUser);
+
+registerRoute('DELETE', BASE_PATH, '/:accountId/apikeys/:name', {
+    summary: 'Delete API key for user (Admin)',
+    description: 'Delete an API key by name for a specific user. Admin only.',
+    tags: ['Accounts', 'Admin'],
+    parameters: [
+        CommonParameters.accountId(),
+        {
+            name: 'name',
+            in: 'path',
+            description: 'API key name',
+            required: true,
+            schema: { type: 'string' }
+        }
+    ],
+    responses: {
+        200: { description: 'API key deleted successfully' },
+        403: CommonResponses.Forbidden,
+        404: CommonResponses.NotFound
+    }
+});
+router.delete('/:accountId/apikeys/:name', guard.check(Roles.Admin), deleteApiKeyForUser);
+
 registerRoute('GET', BASE_PATH, '/', {
     summary: 'Get all accounts (Admin)',
     description: 'Retrieve a list of all user accounts. Admin only.',
@@ -364,6 +479,14 @@ function auth(req, res, next) {
         throw 'request body is of wrong type, must be ICredentials'
     }
     accountService.auth(data).then((resp) => res.json(resp)).catch(err => next(err));
+}
+
+function authApiKey(req, res, next) {
+    const data: IApiKeyAuthForm = req.body;
+    if (!isIApiKeyAuthForm(data)) {
+        throw 'request body is of wrong type, must be IApiKeyAuthForm'
+    }
+    accountService.authApiKey(data.apiKey).then((resp) => res.json(resp)).catch(err => next(err));
 }
 
 function register(req, res, next) {
@@ -401,6 +524,31 @@ function getSelfBalance(req, res, next) {
 function getSelfTransactions(req, res, next) {
     const selfId = getIdFromPayload(req);
     transactionLedger.listEntries({accountId: selfId}).then(resp => res.json(resp)).catch(err => next(err));
+}
+
+function listSelfApiKeys(req, res, next) {
+    const selfId = getIdFromPayload(req);
+    apiKeyService.listByUser(selfId).then((resp) => res.json(resp)).catch(err => next(err));
+}
+
+function createSelfApiKey(req, res, next) {
+    const selfId = getIdFromPayload(req);
+    const data: IApiKeyCreateForm = req.body;
+    if (!isIApiKeyCreateForm(data)) {
+        throw 'request body is of wrong type, must be IApiKeyCreateForm'
+    }
+    apiKeyService.createForUser(selfId, data.name, selfId).then((resp) => res.json(resp)).catch(err => next(err));
+}
+
+function deleteSelfApiKey(req, res, next) {
+    const selfId = getIdFromPayload(req);
+    const name = req.params['name'];
+    apiKeyService.deleteByName(selfId, name).then(() => res.json({})).catch(err => next(err));
+}
+
+function clearSelfApiKeys(req, res, next) {
+    const selfId = getIdFromPayload(req);
+    apiKeyService.clearAllByUser(selfId).then((deleted) => res.json({ deleted })).catch(err => next(err));
 }
 
 function updateSelf(req, res, next) {
@@ -522,6 +670,22 @@ function resetPasswordById(req, res, next) {
     accountService.updatePasswordById(req.params['accountId'],newPassword)
         .then(resp => res.json({ password: newPassword }))
         .catch(err => next(err))
+}
+
+function createApiKeyForUser(req, res, next) {
+    const data: IApiKeyCreateForm = req.body;
+    if (!isIApiKeyCreateForm(data)) {
+        throw 'request body is of wrong type, must be IApiKeyCreateForm'
+    }
+    apiKeyService.createForUser(req.params['accountId'], data.name, getIdFromPayload(req))
+        .then((resp) => res.json(resp))
+        .catch(err => next(err));
+}
+
+function deleteApiKeyForUser(req, res, next) {
+    apiKeyService.deleteByName(req.params['accountId'], req.params['name'])
+        .then(() => res.json({}))
+        .catch(err => next(err));
 }
 
 function getBalance(req, res, next) {
